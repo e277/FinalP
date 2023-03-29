@@ -1,0 +1,1 @@
+courseID, courseName, courseDescription, lecID, studentID

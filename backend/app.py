@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 import mysql.connector
 import bcrypt
@@ -268,6 +268,71 @@ def get_lecturer_courses(lecturer_id):
             return jsonify({'error': 'Lecturer not found'}), 404
     except IndexError:
         return jsonify({'error': 'Courses not found'}), 404
+
+# My PARTS
+#
+# Register for Course 
+@app.route('/register_course', methods=['POST'])
+def register_course():
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+
+        data = request.get_json()
+        course_name = data['courseName']
+        lecturer_id = data['lecId']
+        cursor.execute('INSERT INTO Courses (courseName, lecId) VALUES (%s, %s)', (course_name, lecturer_id))
+        cursor.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({'message': 'Course registered successfully'})
+    except Exception as e:
+        return make_response({'error': str(e)}, 400)
+    
+
+# Retrieve Members
+@app.route('/members/<course_id>', methods=['GET'])
+def get_members(course_id):
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM users WHERE course_id = %s', (course_id,))
+        members = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return jsonify({'members': members})
+    except Exception as e:
+        return make_response({'error': str(e)}, 400)
+
+# Retrieve Course Content
+@app.route('/content/<course_id>', methods=['GET'])
+def retrieve_course_content(course_id):
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM course_content WHERE course_id = %s', (course_id,))
+        content = cursor.fetchall()
+        cursor.close()
+        return jsonify({'content': content})
+    except Exception as e:
+        return make_response({'error': str(e)}, 400)
+
+# Add Course Content
+@app.route('/content/<course_id>', methods=['POST'])
+def add_course_content(course_id):
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        data = request.get_json()
+        section_title = data['section_title']
+        section_content = data['section_content']
+        cursor = mysql.connection.cursor()
+        cursor.execute('INSERT INTO course_content (course_id, section_title, section_content) VALUES (%s, %s, %s)', (course_id, section_title, section_content))
+        cursor.commit()
+        cursor.close()
+        return jsonify({'message': 'Course content added successfully'})
+    except Exception as e:
+        return make_response({'error': str(e)}, 400)
 
 # Retrieve all calender events for a particular course
 @app.route('/api/courses/<int:course_id>/events', methods=['GET'])

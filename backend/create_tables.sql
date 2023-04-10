@@ -1,7 +1,7 @@
 -- Tables - CREATE 
 CREATE TABLE Accounts (
     typeID INT AUTO_INCREMENT,
-    type INT, -- (Lecturer/Course Maintainer, Student, Admin)
+    typeName VARCHAR(255), -- (Lecturer/Course Maintainer, Student, Admin)
     username VARCHAR(255), -- userid
     password VARCHAR(255),
     PRIMARY KEY (typeID)

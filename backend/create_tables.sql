@@ -13,7 +13,7 @@ CREATE TABLE Admins (
     lastName VARCHAR(255),
     typeID INT,
     PRIMARY KEY (adminID),
-    FOREIGN KEY (typeID) REFERENCES Accounts(typeID)
+    FOREIGN KEY (typeID) REFERENCES Accounts(typeID) NULL
 );
 
 CREATE TABLE Lecturers (
@@ -23,7 +23,7 @@ CREATE TABLE Lecturers (
     typeID INT,
     coursesTaught INT CHECK (coursesTaught >= 1 AND coursesTaught <= 5),
     PRIMARY KEY (lecID),
-    FOREIGN KEY (typeID) REFERENCES Accounts(typeID)
+    FOREIGN KEY (typeID) REFERENCES Accounts(typeID) NULL
 );
 
 CREATE TABLE Students (
@@ -33,7 +33,7 @@ CREATE TABLE Students (
     typeID INT,
     coursesEnrolled INT CHECK (coursesEnrolled >= 3 AND coursesEnrolled <= 6),
     PRIMARY KEY (studentID),
-    FOREIGN KEY (typeID) REFERENCES Accounts(typeID)
+    FOREIGN KEY (typeID) REFERENCES Accounts(typeID) NULL
 );
 
 CREATE TABLE Courses (
@@ -44,8 +44,8 @@ CREATE TABLE Courses (
     studentID INT,
     numberOfMembers INT CHECK (numberOfMembers >= 10),
     PRIMARY KEY (courseID),
-    FOREIGN KEY (lecID) REFERENCES Lecturers(lecID),
-    FOREIGN KEY (studentID) REFERENCES Students(studentID)
+    FOREIGN KEY (lecID) REFERENCES Lecturers(lecID) NULL,
+    FOREIGN KEY (studentID) REFERENCES Students(studentID) NULL
 );
 
 CREATE TABLE CourseMembers (
@@ -55,8 +55,8 @@ CREATE TABLE CourseMembers (
     studentID INT,
     PRIMARY KEY (memberID),
     FOREIGN KEY (courseID) REFERENCES Courses(courseID),
-    FOREIGN KEY (lecID) REFERENCES Lecturers(lecID),
-    FOREIGN KEY (studentID) REFERENCES Students(studentID)
+    FOREIGN KEY (lecID) REFERENCES Lecturers(lecID) NULL,
+    FOREIGN KEY (studentID) REFERENCES Students(studentID) NULL
 );
 
 CREATE TABLE DiscussionForums (
@@ -64,7 +64,7 @@ CREATE TABLE DiscussionForums (
     courseID INT,
     forumName VARCHAR(255),
     PRIMARY KEY (forumID),
-    FOREIGN KEY (courseID) REFERENCES Courses(courseID)
+    FOREIGN KEY (courseID) REFERENCES Courses(courseID) NULL
 );
 
 CREATE TABLE DiscussionThreads (
@@ -75,9 +75,9 @@ CREATE TABLE DiscussionThreads (
     lecID INT,
     studentID INT,
     PRIMARY KEY (threadID),
-    FOREIGN KEY (forumID) REFERENCES DiscussionForums(forumID),
-    FOREIGN KEY (lecID) REFERENCES Lecturers(lecID),
-    FOREIGN KEY (studentID) REFERENCES Students(studentID)
+    FOREIGN KEY (forumID) REFERENCES DiscussionForums(forumID) NULL,
+    FOREIGN KEY (lecID) REFERENCES Lecturers(lecID) NULL,
+    FOREIGN KEY (studentID) REFERENCES Students(studentID) NULL
 );
 
 CREATE TABLE DiscussionThreadReplies (
@@ -86,8 +86,8 @@ CREATE TABLE DiscussionThreadReplies (
     courseID INT,
     replyContent VARCHAR(255),
     PRIMARY KEY (replyID),
-    FOREIGN KEY (threadID) REFERENCES DiscussionThreads(threadID),
-    FOREIGN KEY (courseID) REFERENCES Courses(courseID)
+    FOREIGN KEY (threadID) REFERENCES DiscussionThreads(threadID) NULL,
+    FOREIGN KEY (courseID) REFERENCES Courses(courseID) NULL
 );
 
 CREATE TABLE Sections (
@@ -95,7 +95,7 @@ CREATE TABLE Sections (
     courseID INT,
     sectionTitle VARCHAR(255),
     PRIMARY KEY (sectionID),
-    FOREIGN KEY (courseID) REFERENCES Courses(courseID)
+    FOREIGN KEY (courseID) REFERENCES Courses(courseID) NULL
 );
 
 CREATE TABLE SectionIems (
@@ -107,8 +107,8 @@ CREATE TABLE SectionIems (
     itemTitle VARCHAR(255),
     itemContent VARCHAR(255),
     PRIMARY KEY (itemID),
-    FOREIGN KEY (sectionID) REFERENCES Sections(sectionID),
-    FOREIGN KEY (lecID) REFERENCES Lecturers(lecID)
+    FOREIGN KEY (sectionID) REFERENCES Sections(sectionID) NULL,
+    FOREIGN KEY (lecID) REFERENCES Lecturers(lecID) NULL
 );
 
 CREATE TABLE CalenderEvents (
@@ -120,9 +120,9 @@ CREATE TABLE CalenderEvents (
     eventDescription VARCHAR(255),
     eventDate DATE,
     PRIMARY KEY (eventID),
-    FOREIGN KEY (courseID) REFERENCES Courses(courseID),
-    FOREIGN KEY (lecID) REFERENCES Lecturers(lecID),
-    FOREIGN KEY (studentID) REFERENCES Students(studentID)
+    FOREIGN KEY (courseID) REFERENCES Courses(courseID) NULL,
+    FOREIGN KEY (lecID) REFERENCES Lecturers(lecID) NULL,
+    FOREIGN KEY (studentID) REFERENCES Students(studentID) NULL
 );
 
 CREATE TABLE Assignments (
@@ -134,6 +134,6 @@ CREATE TABLE Assignments (
     assignmentDueDate DATE,
     assignmentSubmissionDate DATE,
     PRIMARY KEY (assignmentID),
-    FOREIGN KEY (courseID) REFERENCES Courses(courseID),
-    FOREIGN KEY (studentID) REFERENCES Students(studentID)
+    FOREIGN KEY (courseID) REFERENCES Courses(courseID) NULL,
+    FOREIGN KEY (studentID) REFERENCES Students(studentID) NULL
 );

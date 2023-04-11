@@ -95,7 +95,7 @@ CREATE TABLE Sections (
     courseID INT,
     sectionTitle VARCHAR(255),
     PRIMARY KEY (sectionID),
-    FOREIGN KEY (courseID) REFERENCES Courses(courseID) NULL
+    FOREIGN KEY (courseID) REFERENCES Courses(courseID)
 );
 
 CREATE TABLE SectionIems (
@@ -107,8 +107,8 @@ CREATE TABLE SectionIems (
     itemTitle VARCHAR(255),
     itemContent VARCHAR(255),
     PRIMARY KEY (itemID),
-    FOREIGN KEY (sectionID) REFERENCES Sections(sectionID) NULL,
-    FOREIGN KEY (lecID) REFERENCES Lecturers(lecID) NULL
+    FOREIGN KEY (sectionID) REFERENCES Sections(sectionID),
+    FOREIGN KEY (lecID) REFERENCES Lecturers(lecID)
 );
 
 CREATE TABLE CalenderEvents (
@@ -120,9 +120,9 @@ CREATE TABLE CalenderEvents (
     eventDescription VARCHAR(255),
     eventDate DATE,
     PRIMARY KEY (eventID),
-    FOREIGN KEY (courseID) REFERENCES Courses(courseID) NULL,
-    FOREIGN KEY (lecID) REFERENCES Lecturers(lecID) NULL,
-    FOREIGN KEY (studentID) REFERENCES Students(studentID) NULL
+    FOREIGN KEY (courseID) REFERENCES Courses(courseID),
+    FOREIGN KEY (lecID) REFERENCES Lecturers(lecID),
+    FOREIGN KEY (studentID) REFERENCES Students(studentID)
 );
 
 CREATE TABLE Assignments (
@@ -134,6 +134,19 @@ CREATE TABLE Assignments (
     assignmentDueDate DATE,
     assignmentSubmissionDate DATE,
     PRIMARY KEY (assignmentID),
-    FOREIGN KEY (courseID) REFERENCES Courses(courseID) NULL,
-    FOREIGN KEY (studentID) REFERENCES Students(studentID) NULL
+    FOREIGN KEY (courseID) REFERENCES Courses(courseID),
+    FOREIGN KEY (studentID) REFERENCES Students(studentID)
+);
+
+CREATE TABLE Grades (
+    gradeID INT AUTO_INCREMENT,
+    grade FLOAT(3,2),
+    averageGrade FLOAT(3,2) DEFAULT 0,
+    studentID INT NULL,
+    assignmentID INT NULL,
+    courseID INT NULL,
+    PRIMARY KEY (gradeID),
+    FOREIGN KEY (studentID) REFERENCES Students(studentID),
+    FOREIGN KEY (assignmentID) REFERENCES Assignments(assignmentID),
+    FOREIGN KEY (courseID) REFERENCES Courses(courseID)
 );

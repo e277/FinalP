@@ -49,8 +49,8 @@ def register():
             admin = cursor.fetchone()
             if admin is None:
                 cursor.execute("""
-                    INSERT INTO Accounts (type, username, password) VALUES (%s, %s, %s)
-                """, (1, username, password_hash))
+                    INSERT INTO Accounts (typeName, username, password) VALUES (%s, %s, %s)
+                """, ('admin', username, password_hash))
                 conn.commit()
                 cursor.execute("""
                     SELECT * FROM Accounts WHERE username = %s
@@ -68,8 +68,8 @@ def register():
                 student = cursor.fetchone()
                 if student is None:
                     cursor.execute("""
-                        INSERT INTO Accounts (type, username, password) VALUES (%s, %s, %s)
-                    """, (2, username, password_hash))
+                        INSERT INTO Accounts (typeName, username, password) VALUES (%s, %s, %s)
+                    """, ('lecturer', username, password_hash))
                     conn.commit()
                     cursor.execute("""
                         SELECT * FROM Accounts WHERE username = %s
@@ -83,7 +83,7 @@ def register():
                 else:
                     cursor.execute("""
                         INSERT INTO Accounts (type, username, password) VALUES (%s, %s, %s)
-                    """, (3, username, password_hash))
+                    """, ('student', username, password_hash))
                     conn.commit()
                     cursor.execute("""
                         SELECT * FROM Accounts WHERE username = %s

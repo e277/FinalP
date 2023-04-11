@@ -460,6 +460,187 @@ def get_courses_report():
         return jsonify({'error': 'Courses not found'}), 404
  
 
+
+# API routes
+
+#Forum
+@app.route('/courses/<int:course_id>/forums', methods=['GET'])
+def get_forums(course_id):
+
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+
+    cursor.execute("""SELECT * FROM Courses WHERE courseID = %s""", (course_id,))
+    course = cursor.fetchone()
+
+    if course is not None:
+        cursor.execute (""" SELECT * FROM DiscussionForums WHERE courseID = %s""", (course_id))
+        forums = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        return jsonify ({'forums' : forums}), 200
+    else:
+        return jsonify({'error': 'Course not found'}), 404
+
+  
+
+
+@app.route('/courses/<int:course_id>/forums', methods=['POST'])
+def create_forum(course_id):
+
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+    
+    data = request.get_json()
+
+
+    courseID = data['courseID']
+    forumName = data['forumName']
+
+    try:
+        cursor.execute (""" SELECT courseID FROM Courses WHERE courseID = %s """, (course_id))
+        course = cursor.fetchone()
+
+        if course is not None:
+
+            cursor.execute ("""INSERT INTO DiscussionForums (courseID, forumName) VALUES (%s, %s) """),(courseID, forumName)
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            return jsonify ({'message': 'Forum Created'}), 201
+        else:
+            return jsonify ({'error': 'Course not found'}), 404
+        
+    except IndexError:
+        return jsonify({'error': 'Course not found'}), 404
+
+    
+
+
+#Thread
+@app.route('/forums/<int:forum_id>/threads', methods=['GET'])
+def get_threads(forum_id):
+
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+
+    cursor.execute("""SELECT * FROM DiscussionForums WHERE forumID = %s """, (forum_id,))
+    forum = cursor.fetchone()
+
+    if forum is not None:
+        cursor.execute (""" SELECT * FROM DiscussionThreads WHERE forumID = %s""", (forum_id))
+        threads = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify ({'threads' : threads}), 200
+    else:
+        return jsonify({'error': 'Forum not found'}), 404
+
+
+
+@app.route('/forums/<int:forum_id>/threads', methods=['POST'])
+def create_thread(forumID):
+
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+
+    data = request.get_json()
+
+    forumID = data['forumID']
+    threadTitle = data['threadTitle']
+    threadContent = data['threadContent']
+    lecID = data['lecID']
+    studentID = data['studentID']
+
+    try:
+        cursor.execute (""" SELECT forumID FROM DiscussionForums WHERE forumID = %s """, (forumID))
+
+        forum = cursor.fetchone()
+
+        if forum is not None:
+
+            cursor.execute ("""INSERT INTO DiscussionThreads (forumID, threadTitle, threadContent, lecID, studentID ) VALUES (%s, %s, %s, %s, %s) """),(forumID, threadTitle, threadContent, lecID, studentID )
+
+            conn.commit()
+            cursor.close()
+            conn.close()
+
+            return jsonify ({'message': 'Thread Created'}), 201
+
+        else:
+            return jsonify ({'error': 'Forumn not found'}), 404
+        
+    except IndexError:
+        return jsonify({'error': 'Forumn not found'}), 404
+
+
+
+#Replies
+@app.route('/threads/<int:thread_id>/replies', methods=['POST'])
+def create_reply(thread_id):
+
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+    
+    data = request.get_json()
+
+
+    threadID = data['threadID']
+    courseID = data['courseID']
+    replyContent = data['replyContent']
+
+    try:
+        cursor.execute (""" SELECT threadID FROM DiscussionThreads WHERE threadID = %s """, (thread_id))
+        thread = cursor.fetchone()
+
+        if thread is not None:
+
+            cursor.execute ("""INSERT INTO DiscussionThreadReplies (threadID, courseID, replyContent ) VALUES (%s, %s, %s,) """),(threadID, courseID, replyContent )
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+
+            return jsonify ({'message': 'Reply Sent'}), 201
+        else:
+            return jsonify ({'error': 'Thread not found'}), 404
+        
+    except IndexError:
+        return jsonify({'error': 'Thread not found'}), 404
+    
+
+
+@app.route('/forums/<int:thread_id>/replies', methods=['GET'])
+def get_replies(thread_id):
+
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute (""" SELECT threadID FROM DiscussionThreads WHERE threadID = %s """, (thread_id))
+        thread = cursor.fetchone()
+
+        if thread is not None:
+            cursor.execute (""" SELECT * FROM DiscussionThreadReplies WHERE threadID = %s""", (thread_id))
+            replies = cursor.fetchall()
+
+            cursor.close()
+            conn.close()
+
+            return jsonify ({'replies' : replies}), 200
+        else:
+            return jsonify({'error': 'Thread not found'}), 404
+        
+    except IndexError:
+        return jsonify({'error': 'Thread not found'}), 404
+
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
 

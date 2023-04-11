@@ -1,1 +1,0 @@
-/content/<course_id>

@@ -1,3 +1,6 @@
+backend\env
+backend\env\*
+
 # Logs
 frontend/logs
 frontend/*.log
@@ -22,5 +25,3 @@ frontend/dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-frontend\node_modules

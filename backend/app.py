@@ -6,8 +6,7 @@ import bcrypt
 app = Flask(__name__)
 app.config['JWT_SECRET_KEY'] = 'the-lengenadary-ezra'
 # Configure the JWT options
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=7)
-app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=14)
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False
 jwt = JWTManager(app)
 
 # Database configuration
@@ -273,7 +272,7 @@ def get_lecturer_courses(lecturer_id):
 
 # # My PARTS
 # #
-# # Register for Course - Condolezza
+# # Register for Course - Condoleezza
 # @app.route('/register_course', methods=['POST'])
 # def register_course():
 #     try:
@@ -292,7 +291,7 @@ def get_lecturer_courses(lecturer_id):
 #         return make_response({'error': str(e)}, 400)
     
 
-# # Retrieve Members - Condolezza
+# # Retrieve Members - Condoleezza
 # @app.route('/members/<course_id>', methods=['GET'])
 # def get_members(course_id):
 #     try:
@@ -306,7 +305,7 @@ def get_lecturer_courses(lecturer_id):
 #     except Exception as e:
 #         return make_response({'error': str(e)}, 400)
 
-# # Retrieve Course Content - Condolezza
+# # Retrieve Course Content - Condoleezza
 # @app.route('/content/<course_id>', methods=['GET'])
 # def retrieve_course_content(course_id):
 #     try:
@@ -319,7 +318,7 @@ def get_lecturer_courses(lecturer_id):
 #     except Exception as e:
 #         return make_response({'error': str(e)}, 400)
 
-# # Add Course Content - Condolezza
+# # Add Course Content - Condoleezza
 # @app.route('/content/<course_id>', methods=['POST'])
 # def add_course_content(course_id):
 #     try:

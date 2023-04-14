@@ -6,14 +6,14 @@ import bcrypt
 app = Flask(__name__)
 app.config['JWT_SECRET_KEY'] = 'the-lengenadary-ezra'
 # Configure the JWT options
-# app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=7)
-# app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=14)
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=7)
+app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=14)
 jwt = JWTManager(app)
 
 # Database configuration
 db_config = {'host': 'localhost', 'user': 'root', 'password': 'mysql-25', 'database': 'ourvle_clone'}
 
-
+# Register - ezra (Tarique)
 @app.route('/api/register', methods=['POST'])
 def register():
     # MySQL Connector initialization
@@ -44,7 +44,7 @@ def register():
             # elif Accounts table is not empty, then set the user as student and save that user to Students table
             # else set the user as lecturer and save that user to Lecturers table
             cursor.execute("""
-                SELECT * FROM Accounts WHERE typeID = 1
+                SELECT * FROM Accounts WHERE typeName LIKE 'admin'
             """)
             admin = cursor.fetchone()
             if admin is None:
@@ -63,27 +63,13 @@ def register():
                 return jsonify({'message': 'Admin created successfully'}), 201
             else:
                 cursor.execute("""
-                    SELECT * FROM Accounts WHERE typeID = 2
+                    SELECT * FROM Accounts WHERE typeName LIKE 'lecturer'
                 """)
-                student = cursor.fetchone()
-                if student is None:
+                lecturer = cursor.fetchone()
+                if lecturer is None:
                     cursor.execute("""
                         INSERT INTO Accounts (typeName, username, password) VALUES (%s, %s, %s)
                     """, ('lecturer', username, password_hash))
-                    conn.commit()
-                    cursor.execute("""
-                        SELECT * FROM Accounts WHERE username = %s
-                    """, (username,))
-                    user = cursor.fetchone()
-                    cursor.execute("""
-                        INSERT INTO Students (firstName, lastName, typeID) VALUES (%s, %s, %s)
-                    """, (firstName, lastName, user[0]))
-                    conn.commit()
-                    return jsonify({'message': 'Student created successfully'}), 201
-                else:
-                    cursor.execute("""
-                        INSERT INTO Accounts (type, username, password) VALUES (%s, %s, %s)
-                    """, ('student', username, password_hash))
                     conn.commit()
                     cursor.execute("""
                         SELECT * FROM Accounts WHERE username = %s
@@ -94,10 +80,25 @@ def register():
                     """, (firstName, lastName, user[0]))
                     conn.commit()
                     return jsonify({'message': 'Lecturer created successfully'}), 201
+                else:
+                    cursor.execute("""
+                        INSERT INTO Accounts (typeName, username, password) VALUES (%s, %s, %s)
+                    """, ('student', username, password_hash))
+                    conn.commit()
+                    cursor.execute("""
+                        SELECT * FROM Accounts WHERE username = %s
+                    """, (username,))
+                    user = cursor.fetchone()
+                    cursor.execute("""
+                        INSERT INTO Students (firstName, lastName, typeID) VALUES (%s, %s, %s)
+                    """, (firstName, lastName, user[0]))
+                    conn.commit()
+                    return jsonify({'message': 'Student created successfully'}), 201
     except IndexError:
         return jsonify({'error': 'User already exist'}), 400
 
 
+# Login - ezra (Tarique)
 @app.route('/api/login', methods=['POST'])
 def login():
     # MySQL Connector initialization
@@ -122,13 +123,13 @@ def login():
                 # create access token
                 access_token = create_access_token(identity=user[0])
                 # check if user is admin, student or lecturer
-                if user[1] == 1:
+                if user[1] == 'admin':
                     cursor.execute("""
                         SELECT * FROM Admins WHERE typeID = %s
                     """, (user[0],))
                     admin = cursor.fetchone()
                     return jsonify({'message': 'Login successful', 'access_token': access_token, 'user': admin[3]}), 200
-                elif user[1] == 2:
+                elif user[1] == 'lecturer':
                     cursor.execute("""
                         SELECT * FROM Students WHERE typeID = %s
                     """, (user[0],))
@@ -148,6 +149,7 @@ def login():
         return jsonify({'error': 'User does not exist'}), 401
 
 
+# Logout - ezra
 @app.route('/api/logout', methods=['POST'])
 @jwt_required()
 def logout():
@@ -191,7 +193,7 @@ def logout():
 
 
 
-# Retrieve all the courses
+# Retrieve all the courses - ezra
 @app.route('/api/courses', methods=['GET'])
 def get_courses():
     # MySQL Connector initialization
@@ -217,7 +219,7 @@ def get_courses():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
-# Retrieve courses for a particular student
+# Retrieve courses for a particular student - ezra
 @app.route('/api/courses/<int:student_id>', methods=['GET'])
 def get_student_courses(student_id):
     # MySQL Connector initialization
@@ -243,7 +245,7 @@ def get_student_courses(student_id):
     except IndexError:
         return jsonify({'error': 'Student not found'}), 404
 
-# Retrieve courses taught by a particular lecturer
+# Retrieve courses taught by a particular lecturer - ezra
 @app.route('/api/courses/lecturer/<int:lecturer_id>', methods=['GET'])
 def get_lecturer_courses(lecturer_id):
     # MySQL Connector initialization
@@ -271,7 +273,7 @@ def get_lecturer_courses(lecturer_id):
 
 # # My PARTS
 # #
-# # Register for Course 
+# # Register for Course - Condolezza
 # @app.route('/register_course', methods=['POST'])
 # def register_course():
 #     try:
@@ -290,7 +292,7 @@ def get_lecturer_courses(lecturer_id):
 #         return make_response({'error': str(e)}, 400)
     
 
-# # Retrieve Members
+# # Retrieve Members - Condolezza
 # @app.route('/members/<course_id>', methods=['GET'])
 # def get_members(course_id):
 #     try:
@@ -304,7 +306,7 @@ def get_lecturer_courses(lecturer_id):
 #     except Exception as e:
 #         return make_response({'error': str(e)}, 400)
 
-# # Retrieve Course Content
+# # Retrieve Course Content - Condolezza
 # @app.route('/content/<course_id>', methods=['GET'])
 # def retrieve_course_content(course_id):
 #     try:
@@ -317,7 +319,7 @@ def get_lecturer_courses(lecturer_id):
 #     except Exception as e:
 #         return make_response({'error': str(e)}, 400)
 
-# # Add Course Content
+# # Add Course Content - Condolezza
 # @app.route('/content/<course_id>', methods=['POST'])
 # def add_course_content(course_id):
 #     try:
@@ -334,7 +336,7 @@ def get_lecturer_courses(lecturer_id):
 #     except Exception as e:
 #         return make_response({'error': str(e)}, 400)
 
-# Retrieve all calender events for a particular course
+# Retrieve all calender events for a particular course - ezra
 @app.route('/api/courses/<int:course_id>/events', methods=['GET'])
 def get_course_events(course_id):
     # MySQL Connector initialization
@@ -360,7 +362,7 @@ def get_course_events(course_id):
     except IndexError:
         return jsonify({'error': 'Events not found'}), 404
 
-# Retrieve all calender events for a particular date for a particular student
+# Retrieve all calender events for a particular date for a particular student - ezra
 @app.route('/api/courses/<int:student_id>/events/<string:date>', methods=['GET'])
 def get_student_events(student_id, date):
     # MySQL Connector initialization
@@ -386,7 +388,7 @@ def get_student_events(student_id, date):
     except IndexError:
         return jsonify({'error': 'Events not found'}), 404
 
-# Create a calender event for a particular course
+# Create a calender event for a particular course - ezra
 @app.route('/api/courses/<int:course_id>/events', methods=['POST'])
 def create_course_event(course_id):
     # MySQL Connector initialization
@@ -440,30 +442,12 @@ def create_course_event(course_id):
         return jsonify({'error': 'Course not found'}), 404
 
 # REPORTS
-@app.route('/api/reports/courses', methods=['GET'])
-def get_courses_report():
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor()
-    try:
-        # All courses that have 50 or more students
-        cursor.execute("""
-            SELECT courseID, COUNT(studentID) AS 'Number of Students'
-            FROM Courses
-            GROUP BY courseID
-            HAVING COUNT(studentID) >= 50
-        """)
-        courses = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        return jsonify({'courses': courses}), 200
-    except IndexError:
-        return jsonify({'error': 'Courses not found'}), 404
  
 
 
 # API routes
 
-#Forum
+#Forum - Dukie
 @app.route('/courses/<int:course_id>/forums', methods=['GET'])
 def get_forums(course_id):
 
@@ -483,9 +467,7 @@ def get_forums(course_id):
     else:
         return jsonify({'error': 'Course not found'}), 404
 
-  
-
-
+# Dukie
 @app.route('/courses/<int:course_id>/forums', methods=['POST'])
 def create_forum(course_id):
 
@@ -517,10 +499,7 @@ def create_forum(course_id):
     except IndexError:
         return jsonify({'error': 'Course not found'}), 404
 
-    
-
-
-#Thread
+#Thread - Dukie
 @app.route('/forums/<int:forum_id>/threads', methods=['GET'])
 def get_threads(forum_id):
 
@@ -541,8 +520,7 @@ def get_threads(forum_id):
     else:
         return jsonify({'error': 'Forum not found'}), 404
 
-
-
+# Dukie
 @app.route('/forums/<int:forum_id>/threads', methods=['POST'])
 def create_thread(forumID):
 
@@ -578,9 +556,7 @@ def create_thread(forumID):
     except IndexError:
         return jsonify({'error': 'Forumn not found'}), 404
 
-
-
-#Replies
+#Replies - Dukie
 @app.route('/threads/<int:thread_id>/replies', methods=['POST'])
 def create_reply(thread_id):
 
@@ -613,8 +589,7 @@ def create_reply(thread_id):
     except IndexError:
         return jsonify({'error': 'Thread not found'}), 404
     
-
-
+# Dukie
 @app.route('/forums/<int:thread_id>/replies', methods=['GET'])
 def get_replies(thread_id):
 
@@ -640,7 +615,7 @@ def get_replies(thread_id):
         return jsonify({'error': 'Thread not found'}), 404
 
 
-
+# Main function
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
 

@@ -4,7 +4,6 @@ import random
 
 fake = Faker()
 
-
 # open the pdf file
 pdf_file = PdfReader("C:/Users/Ezra Muir/Downloads/final_version_undergraduate_semester_ii_final_examination_timetable_a-z_1.pdf", strict=False)
 
@@ -31,7 +30,7 @@ key_words = [
     "SOCI", "SOWK", "SPAN", "SPCH", "SPKN", "STAT", "SWEN", 
     "THEO", "TOUR", 
     "ZOOL"
-    ]
+]
 
 # loop through all the pages, choose 200 random courses if each line in the page contains a key word, print the line
 random_courses = []
@@ -45,10 +44,6 @@ for i in range(number_of_pages):
                 random_courses.append(line)
                 break
 random_courses = random.sample(random_courses, 203)
-
-
-# Extract the course code and course name from the random courses list, store them in a dictionary with the course code as the key and the course name as the value
-# For example, the course code is "ACCT 1001" and the course name is "Introduction to Financial Accounting", so anywhere a word has "Mon", "Tue", "Wed", "Thu", "Fri" in it, exclude everything from that word onwards
 
 # create a dictionary to store the course code and course name
 course_dict = {}
@@ -68,6 +63,6 @@ with open('backend/insert_courses.sql', 'w', newline='') as course_file:
         courseName = value
         courseDescription = fake.text(max_nb_chars=200)
         lecID = fake.random_int(min=1, max=99)
-        studentID = fake.random_int(min=1000, max=5999)
+        studentID = fake.random_int(min=1, max=999)
         course_file.write("INSERT INTO Courses (courseName, courseDescription, lecID, studentID) VALUES (" + " '" + courseName + "', '" + courseDescription + "', " + str(lecID) + ", " + str(studentID) + ");\n")
     course_file.write("SET FOREIGN_KEY_CHECKS=1;")

@@ -1,8 +1,8 @@
 -- Tables - CREATE 
 CREATE TABLE Accounts (
     typeID INT AUTO_INCREMENT,
-    typeName VARCHAR(255), -- (Lecturer/Course Maintainer, Student, Admin)
-    username VARCHAR(255), -- userid
+    typeName VARCHAR(255), -- (admin, lecturer, student)
+    username VARCHAR(255), -- acting as userid
     password VARCHAR(255),
     PRIMARY KEY (typeID)
 );
@@ -21,7 +21,6 @@ CREATE TABLE Lecturers (
     firstName VARCHAR(255),
     lastName VARCHAR(255),
     typeID INT NULL,
-    coursesTaught INT CHECK (coursesTaught >= 1 AND coursesTaught <= 5),
     PRIMARY KEY (lecID),
     FOREIGN KEY (typeID) REFERENCES Accounts(typeID)
 );
@@ -31,7 +30,6 @@ CREATE TABLE Students (
     firstName VARCHAR(255),
     lastName VARCHAR(255),
     typeID INT NULL,
-    coursesEnrolled INT CHECK (coursesEnrolled >= 3 AND coursesEnrolled <= 6),
     PRIMARY KEY (studentID),
     FOREIGN KEY (typeID) REFERENCES Accounts(typeID)
 );
@@ -42,9 +40,21 @@ CREATE TABLE Courses (
     courseDescription VARCHAR(255),
     lecID INT NULL,
     studentID INT NULL,
-    numberOfMembers INT CHECK (numberOfMembers >= 10),
     PRIMARY KEY (courseID),
     FOREIGN KEY (lecID) REFERENCES Lecturers(lecID),
+    FOREIGN KEY (studentID) REFERENCES Students(studentID)
+);
+
+CREATE TABLE Enrollments (
+    enrollmentID INT AUTO_INCREMENT,
+    courseID INT NULL,
+    studentID INT NULL,
+    lecID INT NULL,
+    coursesTaught INT CHECK (coursesTaught >= 1 AND coursesTaught <= 5),
+    coursesEnrolled INT CHECK (coursesEnrolled >= 3 AND coursesEnrolled <= 6),
+    numberOfMembers INT CHECK (numberOfMembers >= 10),
+    PRIMARY KEY (enrollmentID),
+    FOREIGN KEY (courseID) REFERENCES Courses(courseID),
     FOREIGN KEY (studentID) REFERENCES Students(studentID)
 );
 

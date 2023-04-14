@@ -38,20 +38,18 @@ function LoginForm() {
                     <input
                         type="text"
                         placeholder='username'
-                        defaultValue={username}
                         onChange={(event) => setUsername(event.target.value)}
-                        className='border-none outline-none rounded-sm'
+                        className='border-none outline-none rounded-sm text-slate-900 p-1 text-sm'
                         />
                     <input
                         type="password"
                         placeholder='password'
-                        defaultValue={password}
                         onChange={(event) => setPassword(event.target.value)}
-                        className='border-none outline-none rounded-sm'
+                        className='border-none outline-none rounded-sm text-slate-900 p-1 text-sm'
                         />
                     <button 
                         type='submit' onClick={handleLogin}
-                        className='bg-slate-100 text-slate-600 rounded-sm px-1'
+                        className='bg-slate-100 text-slate-600 rounded-sm p-1 text-sm'
                         >
                         Login
                     </button>

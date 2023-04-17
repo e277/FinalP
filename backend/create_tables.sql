@@ -54,16 +54,17 @@ CREATE TABLE Enrollments (
     FOREIGN KEY (studentID) REFERENCES Students(studentID)
 );
 
-CREATE TABLE CourseMembers (
-    memberID INT AUTO_INCREMENT,
-    courseID INT NULL,
-    lecID INT NULL,
-    studentID INT NULL,
-    PRIMARY KEY (memberID),
-    FOREIGN KEY (courseID) REFERENCES Courses(courseID),
-    FOREIGN KEY (lecID) REFERENCES Lecturers(lecID),
-    FOREIGN KEY (studentID) REFERENCES Students(studentID)
-);
+-- Same as Enrollments table, but with different constraints
+-- CREATE TABLE CourseMembers (
+--     memberID INT AUTO_INCREMENT,
+--     courseID INT NULL,
+--     lecID INT NULL,
+--     studentID INT NULL,
+--     PRIMARY KEY (memberID),
+--     FOREIGN KEY (courseID) REFERENCES Courses(courseID),
+--     FOREIGN KEY (lecID) REFERENCES Lecturers(lecID),
+--     FOREIGN KEY (studentID) REFERENCES Students(studentID)
+-- );
 
 CREATE TABLE DiscussionForums (
     forumID INT AUTO_INCREMENT,

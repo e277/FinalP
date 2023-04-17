@@ -4,7 +4,7 @@ import mysql.connector
 import bcrypt
 
 app = Flask(__name__)
-app.config['JWT_SECRET_KEY'] = 'the-lengenadary-ezra'
+app.config['JWT_SECRET_KEY'] = 'comp3161-final-project'
 # Configure the JWT options
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False
 jwt = JWTManager(app)

@@ -38,11 +38,7 @@ CREATE TABLE Courses (
     courseID INT AUTO_INCREMENT,
     courseName VARCHAR(255),
     courseDescription VARCHAR(255),
-    lecID INT NULL,
-    studentID INT NULL,
-    PRIMARY KEY (courseID),
-    FOREIGN KEY (lecID) REFERENCES Lecturers(lecID),
-    FOREIGN KEY (studentID) REFERENCES Students(studentID)
+    PRIMARY KEY (courseID)
 );
 
 CREATE TABLE Enrollments (

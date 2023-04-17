@@ -105,7 +105,7 @@ CREATE TABLE Sections (
     FOREIGN KEY (courseID) REFERENCES Courses(courseID)
 );
 
-CREATE TABLE SectionIems (
+CREATE TABLE SectionItems (
     itemID INT AUTO_INCREMENT,
     sectionID INT,
     lecID INT,

@@ -5,6 +5,11 @@ backend/ven/*
 backend/env
 backend/env/*
 
+backend/config.py
+
+backend/__pycache__
+backend/__pycache__/*
+
 # Logs
 frontend/logs
 frontend/*.log

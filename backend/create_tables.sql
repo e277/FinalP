@@ -51,20 +51,15 @@ CREATE TABLE Enrollments (
     numberOfMembers INT CHECK (numberOfMembers >= 10),
     PRIMARY KEY (enrollmentID),
     FOREIGN KEY (courseID) REFERENCES Courses(courseID),
-    FOREIGN KEY (studentID) REFERENCES Students(studentID)
+    FOREIGN KEY (studentID) REFERENCES Students(studentID),
+    FOREIGN KEY (lecID) REFERENCES Lecturers(lecID),
+    CONSTRAINT max_courses_per_student CHECK (coursesEnrolled <= 6),
+    CONSTRAINT min_courses_per_student CHECK (coursesEnrolled >= 3),
+    CONSTRAINT min_members_per_course CHECK (numberOfMembers >= 10),
+    CONSTRAINT max_courses_per_lecturer CHECK (coursesTaught <= 5),
+    CONSTRAINT min_courses_per_lecturer CHECK (coursesTaught >= 1)
 );
 
--- Same as Enrollments table, but with different constraints
--- CREATE TABLE CourseMembers (
---     memberID INT AUTO_INCREMENT,
---     courseID INT NULL,
---     lecID INT NULL,
---     studentID INT NULL,
---     PRIMARY KEY (memberID),
---     FOREIGN KEY (courseID) REFERENCES Courses(courseID),
---     FOREIGN KEY (lecID) REFERENCES Lecturers(lecID),
---     FOREIGN KEY (studentID) REFERENCES Students(studentID)
--- );
 
 CREATE TABLE DiscussionForums (
     forumID INT AUTO_INCREMENT,

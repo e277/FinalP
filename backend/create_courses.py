@@ -64,5 +64,5 @@ with open('backend/insert_courses.sql', 'w', newline='') as course_file:
         courseDescription = fake.text(max_nb_chars=200)
         lecID = fake.random_int(min=1, max=99)
         studentID = fake.random_int(min=1, max=999)
-        course_file.write("INSERT INTO Courses (courseName, courseDescription, lecID, studentID) VALUES (" + " '" + courseName + "', '" + courseDescription + "', " + str(lecID) + ", " + str(studentID) + ");\n")
+        course_file.write("INSERT INTO Courses (courseName, courseDescription) VALUES (" + " `" + courseName + "`, `" + courseDescription + "`);\n")
     course_file.write("SET FOREIGN_KEY_CHECKS=1;")

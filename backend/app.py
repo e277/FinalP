@@ -10,7 +10,7 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False
 jwt = JWTManager(app)
 
 # Database configuration
-db_config = {'host': 'localhost', 'user': 'root', 'password': 'mysql-25', 'database': 'ourvle_clone'}
+db_config = {'host': 'localhost', 'user': 'root', 'password': 'Re$pectme4', 'database': 'ourvle_clone'}
 
 # Register - ezra (Tarique)
 @app.route('/api/register', methods=['POST'])
@@ -270,70 +270,143 @@ def get_lecturer_courses(lecturer_id):
     except IndexError:
         return jsonify({'error': 'Courses not found'}), 404
 
-# # My PARTS
-# #
-# # Register for Course - Condoleezza
-# @app.route('/register_course', methods=['POST'])
-# def register_course():
-#     try:
-#         conn = mysql.connector.connect(**db_config)
-#         cursor = conn.cursor()
+# My PARTS
+#
+# Register for Course - Condoleezza
+@app.route('/api/register_for_course', methods=['POST'])
+def register_for_course():
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
 
-#         data = request.get_json()
-#         course_name = data['courseName']
-#         lecturer_id = data['lecId']
-#         cursor.execute('INSERT INTO Courses (courseName, lecId) VALUES (%s, %s)', (course_name, lecturer_id))
-#         cursor.commit()
-#         cursor.close()
-#         conn.close()
-#         return jsonify({'message': 'Course registered successfully'})
-#     except Exception as e:
-#         return make_response({'error': str(e)}, 400)
+        data = request.get_json()
+        student_id = data['student_id']
+        course_id = data['course_id']
+
+        # Check if the course exists
+        cursor.execute("SELECT lecID FROM Courses WHERE courseID=%s", (course_id,))
+        result = cursor.fetchone()
+        if not result:
+            return make_response({'error': 'Course does not exist'}, 404)
+        
+        lecturer_id = result[0]
+        # print(lecturer_id)
+
+        # Check if course has a lecturer assigned
+        cursor.execute("SELECT lecID FROM Courses WHERE courseID=%s", (course_id,))
+        result = cursor.fetchone()
+        if not result:
+            return make_response({'error': 'This course does not have a lecturer assigned yet'}, 400)
+
+        # Check if the student is already enrolled in the course
+        cursor.execute("SELECT * FROM Enrollments WHERE studentID = %s AND courseID = %s", (student_id, course_id))
+        result = cursor.fetchone()
+        if result is not None:
+            return make_response({'error': 'Student is already enrolled in the course'}, 400)
+
+        # Register the student for the course
+        cursor.execute("INSERT INTO Enrollments (courseID, lecID, studentID) VALUES (%s, %s, %s)", (course_id, lecturer_id, student_id))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({'message': 'Course registration successful'}), 201
+    except Exception as e:
+        return make_response({'error': str(e)}, 400)
     
 
-# # Retrieve Members - Condoleezza
-# @app.route('/members/<course_id>', methods=['GET'])
-# def get_members(course_id):
-#     try:
-#         conn = mysql.connector.connect(**db_config)
-#         cursor = conn.cursor()
-#         cursor.execute('SELECT * FROM users WHERE course_id = %s', (course_id,))
-#         members = cursor.fetchall()
-#         cursor.close()
-#         conn.close()
-#         return jsonify({'members': members})
-#     except Exception as e:
-#         return make_response({'error': str(e)}, 400)
+# Retrieve Members - Condoleezza
+@app.route('/api/course/<int:course_id>/members', methods=['GET'])
+def get_course_members(course_id):
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        
+        course_members = CourseMembers.query.filter_by(courseID=course_id).all()
+        members = []
+        for member in course_members:
+            if member.lecID is not None:
+                lecturer = Lecturers.query.filter_by(lecID=member.lecID).first()
+                member_data = {
+                    'member_id': member.memberID,
+                    'member_type': 'lecturer',
+                    'member_name': f'{lecturer.firstName} {lecturer.lastName}'
+                }
+            else:
+                student = Students.query.filter_by(studentID=member.studentID).first()
+                member_data = {
+                    'member_id': member.memberID,
+                    'member_type': 'student',
+                    'member_name': f'{student.firstName} {student.lastName}'
+                }
+            members.append(member_data)
+        return jsonify({'members': members})
+    except Exception as e:
+        return make_response({'error': str(e)}, 400)
 
-# # Retrieve Course Content - Condoleezza
-# @app.route('/content/<course_id>', methods=['GET'])
-# def retrieve_course_content(course_id):
-#     try:
-#         conn = mysql.connector.connect(**db_config)
-#         cursor = conn.cursor()
-#         cursor.execute('SELECT * FROM course_content WHERE course_id = %s', (course_id,))
-#         content = cursor.fetchall()
-#         cursor.close()
-#         return jsonify({'content': content})
-#     except Exception as e:
-#         return make_response({'error': str(e)}, 400)
+# Add Course Content - Condoleezza
+@app.route('/api/add_course_content', methods=['POST'])
+def add_course_content():
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        data = request.get_json()
+        course_id = data['course_id']
+        section_id = data['section_id']
+        item_type = data['item_type']
+        item_title = data['item_title']
+        item_content = data['item_content']
+        lec_id = data['lec_id']
 
-# # Add Course Content - Condoleezza
-# @app.route('/content/<course_id>', methods=['POST'])
-# def add_course_content(course_id):
-#     try:
-#         conn = mysql.connector.connect(**db_config)
-#         cursor = conn.cursor()
-#         data = request.get_json()
-#         section_title = data['section_title']
-#         section_content = data['section_content']
-#         cursor = mysql.connection.cursor()
-#         cursor.execute('INSERT INTO course_content (course_id, section_title, section_content) VALUES (%s, %s, %s)', (course_id, section_title, section_content))
-#         cursor.commit()
-#         cursor.close()
-#         return jsonify({'message': 'Course content added successfully'})
-#     except Exception as e:
-#         return make_response({'error': str(e)}, 400)
+        # Check if the lecturer is assigned to the course
+        course = Courses.query.filter_by(courseID=course_id, lecID=lec_id).first()
+        if not course:
+            return jsonify({'error': 'Lecturer not assigned to course.'})
+
+        # Check if the section exists
+        section = Sections.query.filter_by(sectionID=section_id, courseID=course_id).first()
+        if not section:
+            return jsonify({'error': 'Section does not exist.'})
+
+        # Add the item to the section
+        new_item = SectionItems(
+            sectionID=section_id,
+            lecID=lec_id,
+            itemType=item_type,
+            itemTitle=item_title,
+            itemContent=item_content
+        )
+        db.session.add(new_item)
+        db.session.commit()
+
+        return jsonify({'success': 'Course content added successfully.'})
+    except Exception as e:
+        return make_response({'error': str(e)}, 400)
+
+# Retrieve Course Content - Condoleezza
+@app.route('/api/course_content/<course_id>', methods=['GET'])
+def course_content(course_id):
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        
+        sections = Sections.query.filter_by(courseID=course_id).all()
+
+        course_content = []
+        for section in sections:
+            section_items = SectionItems.query.filter_by(sectionID=section.sectionID).all()
+            section_content = {'section_title': section.sectionTitle, 'section_items': []}
+            for item in section_items:
+                section_content['section_items'].append({
+                    'item_type': item.itemType,
+                    'item_title': item.itemTitle,
+                    'item_content': item.itemContent
+                })
+            course_content.append(section_content)
+
+        return jsonify({'course_content': course_content})
+
+    except Exception as e:
+        return make_response({'error': str(e)}, 400)
 
 # Retrieve all calender events for a particular course - ezra
 @app.route('/api/courses/<int:course_id>/events', methods=['GET'])

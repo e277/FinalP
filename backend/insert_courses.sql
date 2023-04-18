@@ -23,7 +23,7 @@ Citizen degree suggest support little court. Front against still feel subject.',
 INSERT INTO Courses (courseName, courseDescription, lecID, studentID) VALUES ( 'Amalgam Restorations ', 'How ok sister cold fact party. We tend white.
 His writer minute section maintain.
 Message life wrong. Religious significant itself character oil war watch alone.', 60, 360);
-INSERT INTO Courses (courseName, courseDescription, lecID, studentID) VALUES ( 'Beginners' French I ', 'Finish war do half whole. Remember reach provide whole similar produce accept about. Of should get marriage through parent there.
+INSERT INTO Courses (courseName, courseDescription, lecID, studentID) VALUES ( 'Beginners French I ', 'Finish war do half whole. Remember reach provide whole similar produce accept about. Of should get marriage through parent there.
 Get actually since all. Turn join across girl sea.', 34, 919);
 INSERT INTO Courses (courseName, courseDescription, lecID, studentID) VALUES ( 'Social Cognition ', 'Hospital do smile fact man. Model bill heart recently. Success stand design think onto. Him through seven green rock.', 6, 467);
 INSERT INTO Courses (courseName, courseDescription, lecID, studentID) VALUES ( 'Clinical Pharmacy VI: Patient Assessment, Data Collection and Therapeu ', 'List up buy son. Increase forget program gun my. Television red Mrs field. Capital shoulder similar really city must particular.', 38, 247);
@@ -245,7 +245,7 @@ INSERT INTO Courses (courseName, courseDescription, lecID, studentID) VALUES ( '
 Just yard find risk hit tend radio. Box at point picture.', 24, 54);
 INSERT INTO Courses (courseName, courseDescription, lecID, studentID) VALUES ( 'Theory and Practice of International Negotiations ', 'Southern too any stop defense development increase eat. International court less consider worry avoid dog.
 Discover now leader. Learn stage base.', 86, 296);
-INSERT INTO Courses (courseName, courseDescription, lecID, studentID) VALUES ( 'Beginners' Spanish (l) ', 'Animal single sit parent stop sort number store. Appear pretty perhaps.
+INSERT INTO Courses (courseName, courseDescription, lecID, studentID) VALUES ( 'Beginners Spanish (l) ', 'Animal single sit parent stop sort number store. Appear pretty perhaps.
 Lay much into wall. Decade free along a some accept TV.', 88, 302);
 INSERT INTO Courses (courseName, courseDescription, lecID, studentID) VALUES ( 'E-Commerce ', 'To simple run perform smile under who. Turn mother say cup. Late consider general best whatever rich.', 16, 47);
 INSERT INTO Courses (courseName, courseDescription, lecID, studentID) VALUES ( 'Neurophysiology ', 'Economic no anyone western. Personal wonder when bag whom.', 13, 134);

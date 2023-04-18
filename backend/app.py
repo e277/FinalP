@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify, make_response
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
+from datetime import datetime
 import mysql.connector
 import bcrypt
+
 
 app = Flask(__name__)
 app.config['JWT_SECRET_KEY'] = 'comp3161-final-project'
@@ -12,7 +14,7 @@ jwt = JWTManager(app)
 # import the database configuration from config.py
 from config import db_config
 
-# Register - ezra (Tarique)
+# Register - ezra
 @app.route('/api/register', methods=['POST'])
 def register():
     # MySQL Connector initialization
@@ -32,7 +34,7 @@ def register():
     try:
         # get user from the database
         cursor.execute("""
-            SELECT * FROM Accounts WHERE username = %s
+            SELECT username FROM Accounts WHERE username = %s
         """, (username,))
         user = cursor.fetchone()
         if user is not None:
@@ -43,7 +45,7 @@ def register():
             # elif Accounts table is not empty, then set the user as student and save that user to Students table
             # else set the user as lecturer and save that user to Lecturers table
             cursor.execute("""
-                SELECT * FROM Accounts WHERE typeName LIKE 'admin'
+                SELECT typeName FROM Accounts WHERE typeName LIKE 'admin'
             """)
             admin = cursor.fetchone()
             if admin is None:
@@ -52,9 +54,10 @@ def register():
                 """, ('admin', username, password_hash))
                 conn.commit()
                 cursor.execute("""
-                    SELECT * FROM Accounts WHERE username = %s
+                    SELECT typeID FROM Accounts WHERE username = %s
                 """, (username,))
                 user = cursor.fetchone()
+                # print(user)
                 cursor.execute("""
                     INSERT INTO Admins (firstName, lastName, typeID) VALUES (%s, %s, %s)
                 """, (firstName, lastName, user[0]))
@@ -62,42 +65,24 @@ def register():
                 return jsonify({'message': 'Admin created successfully'}), 201
             else:
                 cursor.execute("""
-                    SELECT * FROM Accounts WHERE typeName LIKE 'lecturer'
-                """)
-                lecturer = cursor.fetchone()
-                if lecturer is None:
-                    cursor.execute("""
-                        INSERT INTO Accounts (typeName, username, password) VALUES (%s, %s, %s)
-                    """, ('lecturer', username, password_hash))
-                    conn.commit()
-                    cursor.execute("""
-                        SELECT * FROM Accounts WHERE username = %s
-                    """, (username,))
-                    user = cursor.fetchone()
-                    cursor.execute("""
-                        INSERT INTO Lecturers (firstName, lastName, typeID) VALUES (%s, %s, %s)
-                    """, (firstName, lastName, user[0]))
-                    conn.commit()
-                    return jsonify({'message': 'Lecturer created successfully'}), 201
-                else:
-                    cursor.execute("""
-                        INSERT INTO Accounts (typeName, username, password) VALUES (%s, %s, %s)
-                    """, ('student', username, password_hash))
-                    conn.commit()
-                    cursor.execute("""
-                        SELECT * FROM Accounts WHERE username = %s
-                    """, (username,))
-                    user = cursor.fetchone()
-                    cursor.execute("""
-                        INSERT INTO Students (firstName, lastName, typeID) VALUES (%s, %s, %s)
-                    """, (firstName, lastName, user[0]))
-                    conn.commit()
-                    return jsonify({'message': 'Student created successfully'}), 201
+                    INSERT INTO Accounts (typeName, username, password) VALUES (%s, %s, %s)
+                """, ('lecturer', username, password_hash))
+                conn.commit()
+                cursor.execute("""
+                    SELECT typeID FROM Accounts WHERE username = %s
+                """, (username,))
+                user = cursor.fetchone()
+                # print(user)
+                cursor.execute("""
+                    INSERT INTO Lecturers (firstName, lastName, typeID) VALUES (%s, %s, %s)
+                """, (firstName, lastName, user[0]))
+                conn.commit()
+                return jsonify({'message': 'Lecturer created successfully'}), 201
     except IndexError:
         return jsonify({'error': 'User already exist'}), 400
 
 
-# Login - ezra (Tarique)
+# Login - ezra
 @app.route('/api/login', methods=['POST'])
 def login():
     # MySQL Connector initialization
@@ -190,8 +175,6 @@ def logout():
 
 
 
-
-
 # Retrieve all the courses - ezra
 @app.route('/api/courses', methods=['GET'])
 def get_courses():
@@ -203,14 +186,11 @@ def get_courses():
     # print(cursor.fetchall())
     try:
         # get all courses
-        for courseID, courseName, courseDescription, lecId, studentID, numberOfMembers in cursor:
+        for courseID, courseName, courseDescription in cursor:
             course = {}
             course['Course ID'] = courseID
             course['Course Name'] = courseName
             course['Course Description'] = courseDescription
-            course['Lecturer ID'] = lecId
-            course['Student ID'] = studentID
-            course['Number of Members'] = numberOfMembers
             courses.append(course)
         cursor.close()
         conn.close()
@@ -227,22 +207,30 @@ def get_student_courses(student_id):
     try:
         # check if student exist
         cursor.execute("""
-            SELECT * FROM Students WHERE studentID = %s
+            SELECT studentID FROM Students WHERE studentID = %s
         """, (student_id,))
         student = cursor.fetchone()
         # if the student exist, get all courses else return error
+        # join the courses and enrolled tables to get the courses for a particular student
         if student is not None:
             cursor.execute("""
-                SELECT * FROM Courses WHERE studentID = %s
+                SELECT c.courseName, c.courseDescription
+                FROM Courses AS c Right JOIN Enrollments AS e ON c.courseID = e.courseID 
+                WHERE e.studentID = %s
             """, (student_id,))
-            courses = cursor.fetchall()
+            courses = []
+            for courseName, courseDescription in cursor:
+                course = {}
+                course['Course Name'] = courseName
+                course['Course Description'] = courseDescription
+                courses.append(course)
             cursor.close()
             conn.close()
-            return jsonify({'courses': courses}), 200
+            return jsonify({'courses for student': courses}), 200
         else:
-            return jsonify({'error': 'Student not found'}), 404
+            return jsonify({'error': 'Student not found'}), 400
     except IndexError:
-        return jsonify({'error': 'Student not found'}), 404
+        return jsonify({'error': 'Courses not found'}), 404
 
 # Retrieve courses taught by a particular lecturer - ezra
 @app.route('/api/courses/lecturer/<int:lecturer_id>', methods=['GET'])
@@ -253,20 +241,27 @@ def get_lecturer_courses(lecturer_id):
     try:
         # check if lecturer exist
         cursor.execute("""
-            SELECT * FROM Lecturers WHERE lecID = %s
+            SELECT lecID FROM Enrollments WHERE lecID = %s
         """, (lecturer_id,))
-        lecturer = cursor.fetchone()
+        lecturer = cursor.fetchall()
         # if the lecturer exist, get all courses else return error
         if lecturer is not None:
             cursor.execute("""
-                SELECT * FROM Courses WHERE lecID = %s
+                SELECT c.courseName, c.courseDescription 
+                FROM Courses As c LEFT JOIN Enrollments AS e ON c.courseID = e.courseID
+                WHERE e.lecID = %s
             """, (lecturer_id,))
-            courses = cursor.fetchall()
+            courses = []
+            for courseName, courseDescription in cursor:
+                course = {}
+                course['Course Name'] = courseName
+                course['Course Description'] = courseDescription
+                courses.append(course)
             cursor.close()
             conn.close()
-            return jsonify({'courses': courses}), 200
+            return jsonify({'Courses for lecturer': courses}), 200
         else:
-            return jsonify({'error': 'Lecturer not found'}), 404
+            return jsonify({'error': 'Lecturer not found'}), 400
     except IndexError:
         return jsonify({'error': 'Courses not found'}), 404
 
@@ -396,6 +391,8 @@ def retrieve_course_content(course_id):
     except Exception as e:
         return make_response({'error': str(e)}, 400)
 
+
+
 # Retrieve all calender events for a particular course - ezra
 @app.route('/api/courses/<int:course_id>/events', methods=['GET'])
 def get_course_events(course_id):
@@ -405,7 +402,7 @@ def get_course_events(course_id):
     try:
         # check if course exist
         cursor.execute("""
-            SELECT * FROM Courses WHERE courseID = %s
+            SELECT courseID FROM Courses WHERE courseID = %s
         """, (course_id,))
         course = cursor.fetchone()
         # if the course exist, get all events else return error
@@ -413,40 +410,62 @@ def get_course_events(course_id):
             cursor.execute("""
                 SELECT * FROM CalenderEvents WHERE courseID = %s
             """, (course_id,))
-            events = cursor.fetchall()
+            events = []
+            for eventID, courseID, lecID, studentID, eventTitle, eventDescription, eventDate in cursor:
+                event = {}
+                event['eventID'] = eventID
+                event['courseID'] = courseID
+                event['lecID'] = lecID
+                event['studentID'] = studentID
+                event['eventTitle'] = eventTitle
+                event['eventDescription'] = eventDescription
+                event['eventDate'] = str(eventDate)
+                events.append(event)
             cursor.close()
             conn.close()
-            return jsonify({'events': events}), 200
+            return jsonify({'events': events})
         else:
             return jsonify({'error': 'Course not found'}), 404
     except IndexError:
         return jsonify({'error': 'Events not found'}), 404
 
 # Retrieve all calender events for a particular date for a particular student - ezra
-@app.route('/api/courses/<int:student_id>/events/<string:date>', methods=['GET'])
-def get_student_events(student_id, date):
+@app.route('/api/courses/<string:date>/events/<int:student_id>', methods=['GET'])
+def get_student_events(date, student_id):
     # MySQL Connector initialization
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
     try:
         # check if student exist
         cursor.execute("""
-            SELECT * FROM Students WHERE studentID = %s
+            SELECT studentID FROM Enrollments WHERE studentID = %s
         """, (student_id,))
         student = cursor.fetchone()
         # if the student exist, get all events else return error
         if student is not None:
             cursor.execute("""
-                SELECT * FROM CalenderEvents WHERE studentID = %s AND eventDate = %s
+                SELECT e.courseID, e.studentID, c.eventTitle, c.eventDescription, c.eventDate 
+                FROM CalenderEvents AS c 
+                    LEFT JOIN Enrollments AS e ON e.courseID = c.courseID 
+                WHERE e.studentID = %s AND c.eventDate = %s
             """, (student_id, date))
-            events = cursor.fetchall()
+            events = []
+            for courseID, studentID, eventTitle, eventDescription, eventDate in cursor:
+                event = {}
+                event['courseID'] = courseID
+                event['studentID'] = studentID
+                event['eventTitle'] = eventTitle
+                event['eventDescription'] = eventDescription
+                event['eventDate'] = str(eventDate)
+                events.append(event)
             cursor.close()
             conn.close()
-            return jsonify({'events': events}), 200
+            return jsonify({'events': events})
         else:
             return jsonify({'error': 'Student not found'}), 404
     except IndexError:
         return jsonify({'error': 'Events not found'}), 404
+
 
 # Create a calender event for a particular course - ezra
 @app.route('/api/courses/<int:course_id>/events', methods=['POST'])
@@ -465,45 +484,41 @@ def create_course_event(course_id):
 
     # get user from the database
     try:
-        # check if course exist
+        # check if course exist and if the lecturer is the one creating the event, a student is registered for the course already
         cursor.execute("""
-            SELECT courseID FROM Courses WHERE courseID = %s
+            SELECT * FROM Courses WHERE courseID = %s
         """, (course_id,))
         course = cursor.fetchone()
-        # get all the students in the course that the event is being created for
-        cursor.execute("""
-            SELECT courseID, studentID FROM Courses WHERE courseID = %s
-        """, (course_id,))
-        students = cursor.fetchall()
-        # find the lecturer creating the event
-        cursor.execute("""
-            SELECT courseID, lecID FROM Courses WHERE courseID = %s
-        """, (course_id,))
-        lecturer = cursor.fetchone()
-        # if the course exist, create the event else return error
+        # if the course exist, get all events else return error
         if course is not None:
-            # create the event
             cursor.execute("""
-                INSERT INTO CalenderEvents (courseID, lecID, studentID, eventTitle, eventDescription, eventDate)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """, (course[0], lecID, studentID, eventTitle, eventDescription, eventDate))
-            conn.commit()
-            cursor.close()
-            conn.close()
-            # print all the students in the course that the event is being created for
-            for student in students:
-                print("Students: ", student)
-            # print the lecturer creating the event
-            print("Lecturer: ", lecturer)
-            return jsonify({'message': 'Event created successfully'}), 201
+                SELECT e.lecID, e.studentID
+                FROM Enrollments AS e LEFT 
+                    JOIN Lecturers AS l ON e.lecID = l.lecID
+                    LEFT JOIN Students AS s ON e.studentID = s.studentID
+                WHERE e.courseID = %s AND e.lecID = %s AND e.studentID = %s
+            """, (course_id, lecID, studentID))
+            result = cursor.fetchone()
+            # if the lecturer is the one creating the event, a student is registered for the course already
+            if result is not None:
+                # create the event
+                cursor.execute("""
+                    INSERT INTO CalenderEvents (courseID, lecID, studentID, eventTitle, eventDescription, eventDate)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (course_id, lecID, studentID, eventTitle, eventDescription, eventDate))
+                conn.commit()
+                cursor.close()
+                conn.close()
+                return jsonify({'success': 'Event created successfully.'}), 201
+            else:
+                return jsonify({'error': 'Lecturer or student not assigned'}), 404
         else:
             return jsonify({'error': 'Course not found'}), 404
     except IndexError:
-        return jsonify({'error': 'Course not found'}), 404
+        return jsonify({'error': 'Events not found'}), 404
 
-# REPORTS
- 
 
+        
 
 # API routes
 
@@ -673,6 +688,10 @@ def get_replies(thread_id):
         
     except IndexError:
         return jsonify({'error': 'Thread not found'}), 404
+
+
+
+# REPORTS
 
 
 # Main function

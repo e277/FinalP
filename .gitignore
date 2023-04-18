@@ -1,5 +1,9 @@
 backend/venv
 backend/venv/*
+backend/ven
+backend/ven/*
+backend/env
+backend/env/*
 
 # Logs
 frontend/logs

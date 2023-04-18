@@ -10,7 +10,7 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False
 jwt = JWTManager(app)
 
 # Database configuration
-db_config = {'host': 'localhost', 'user': 'root', 'password': 'Re$pectme4', 'database': 'ourvle_clone'}
+db_config = {'host': 'localhost', 'user': 'root', 'password': 'mysql-25', 'database': 'ourvle_clone'}
 
 # Register - ezra (Tarique)
 @app.route('/api/register', methods=['POST'])

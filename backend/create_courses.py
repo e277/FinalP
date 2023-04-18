@@ -58,11 +58,11 @@ for course in random_courses:
 
 # Insert the course code and course name into a sql file
 with open('backend/insert_courses.sql', 'w', newline='') as course_file:
-    course_file.write("SET FOREIGN_KEY_CHECKS=0;\n")
+    course_file.write('SET FOREIGN_KEY_CHECKS=0;\n')
     for value in course_dict.values():
         courseName = value
         courseDescription = fake.text(max_nb_chars=200)
         lecID = fake.random_int(min=1, max=99)
         studentID = fake.random_int(min=1, max=999)
-        course_file.write("INSERT INTO Courses (courseName, courseDescription) VALUES (" + " `" + courseName + "`, `" + courseDescription + "`);\n")
-    course_file.write("SET FOREIGN_KEY_CHECKS=1;")
+        course_file.write('INSERT INTO Courses (courseName, courseDescription) VALUES ("{}", "{}");\n'.format(courseName, courseDescription))
+    course_file.write('SET FOREIGN_KEY_CHECKS=1;')

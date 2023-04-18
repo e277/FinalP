@@ -10,7 +10,7 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False
 jwt = JWTManager(app)
 
 # Database configuration
-db_config = {'host': 'localhost', 'user': 'root', 'password': 'mysql-25', 'database': 'ourvle_clone'}
+db_config = {'host': 'localhost', 'user': 'root', 'password': '', 'database': 'ourvle_clone'}
 
 # Register - ezra (Tarique)
 @app.route('/api/register', methods=['POST'])
@@ -284,28 +284,29 @@ def register_for_course():
         course_id = data['course_id']
 
         # Check if the course exists
-        cursor.execute("SELECT lecID FROM Courses WHERE courseID=%s", (course_id,))
+        cursor.execute("SELECT courseID FROM Courses WHERE courseID=%s", (course_id,))
         result = cursor.fetchone()
         if not result:
             return make_response({'error': 'Course does not exist'}, 404)
-        
-        lecturer_id = result[0]
-        # print(lecturer_id)
 
         # Check if course has a lecturer assigned
-        cursor.execute("SELECT lecID FROM Courses WHERE courseID=%s", (course_id,))
+        cursor.execute("SELECT lec.lecID FROM Lecturers AS lec LEFT JOIN Accounts AS ac ON ac.typeID = lec.typeID AND ac.typeName = 'lecturer'")
         result = cursor.fetchone()
         if not result:
             return make_response({'error': 'This course does not have a lecturer assigned yet'}, 400)
+        
+        lecturer_id = result[0]
 
         # Check if the student is already enrolled in the course
         cursor.execute("SELECT * FROM Enrollments WHERE studentID = %s AND courseID = %s", (student_id, course_id))
         result = cursor.fetchone()
         if result is not None:
             return make_response({'error': 'Student is already enrolled in the course'}, 400)
-
-        # Register the student for the course
-        cursor.execute("INSERT INTO Enrollments (courseID, lecID, studentID) VALUES (%s, %s, %s)", (course_id, lecturer_id, student_id))
+        else:
+            # Assign lecturer to the course
+            cursor.execute("INSERT INTO Enrollments (courseID, lecID) VALUES (%s, %s)", (course_id, lecturer_id))
+            # Update record with Student ID
+            cursor.execute("UPDATE Enrollments SET studentID = %s WHERE enrollmentID = LAST_INSERT_ID()", (student_id,))
         conn.commit()
         cursor.close()
         conn.close()
@@ -315,96 +316,83 @@ def register_for_course():
     
 
 # Retrieve Members - Condoleezza
-@app.route('/api/course/<int:course_id>/members', methods=['GET'])
-def get_course_members(course_id):
+@app.route('/api/retrieve_members/<course_id>', methods=['GET'])
+def retrieve_members(course_id):
     try:
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor()
-        
-        course_members = CourseMembers.query.filter_by(courseID=course_id).all()
+        cursor.execute("SELECT e.courseID, e.studentID, s.firstName, s.lastName, e.lecID FROM Enrollments AS e LEFT JOIN Students AS s ON e.studentID = s.studentID WHERE e.courseID =%s", (course_id,))
         members = []
-        for member in course_members:
-            if member.lecID is not None:
-                lecturer = Lecturers.query.filter_by(lecID=member.lecID).first()
-                member_data = {
-                    'member_id': member.memberID,
-                    'member_type': 'lecturer',
-                    'member_name': f'{lecturer.firstName} {lecturer.lastName}'
-                }
-            else:
-                student = Students.query.filter_by(studentID=member.studentID).first()
-                member_data = {
-                    'member_id': member.memberID,
-                    'member_type': 'student',
-                    'member_name': f'{student.firstName} {student.lastName}'
-                }
-            members.append(member_data)
+        for courseID, studentID, firstName, lastName, lecID in cursor:
+            member = {}
+            member['courseID'] = courseID
+            member['studentID'] = studentID
+            member['firstName'] = firstName
+            member['lastName'] = lastName
+            member['lecID'] = lecID
+            members.append(member)
+        cursor.close()
+        conn.close()
         return jsonify({'members': members})
     except Exception as e:
         return make_response({'error': str(e)}, 400)
 
 # Add Course Content - Condoleezza
-@app.route('/api/add_course_content', methods=['POST'])
-def add_course_content():
+@app.route('/api/add_course_content/<course_id>', methods=['POST'])
+def add_course_content(course_id):
     try:
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor()
+
         data = request.get_json()
-        course_id = data['course_id']
-        section_id = data['section_id']
+        section_title = data['section_title']
         item_type = data['item_type']
         item_title = data['item_title']
         item_content = data['item_content']
-        lec_id = data['lec_id']
 
-        # Check if the lecturer is assigned to the course
-        course = Courses.query.filter_by(courseID=course_id, lecID=lec_id).first()
-        if not course:
-            return jsonify({'error': 'Lecturer not assigned to course.'})
-
-        # Check if the section exists
-        section = Sections.query.filter_by(sectionID=section_id, courseID=course_id).first()
-        if not section:
-            return jsonify({'error': 'Section does not exist.'})
-
-        # Add the item to the section
-        new_item = SectionItems(
-            sectionID=section_id,
-            lecID=lec_id,
-            itemType=item_type,
-            itemTitle=item_title,
-            itemContent=item_content
-        )
-        db.session.add(new_item)
-        db.session.commit()
-
+        # Checking if the course id exists in Enrollments 
+        cursor.execute("SELECT courseID, lecID FROM Enrollments WHERE courseID = %s", (course_id,))
+        result = cursor.fetchall()
+        print("result", result)
+        # Creates content for a particular course
+        if result is not None:
+            cursor.execute("INSERT INTO Sections (courseID, sectionTitle) VALUES (%s, %s)", (result[0][0], section_title))
+            
+            # Retrieve sectionID from the Sections table
+            cursor.execute("SELECT sectionID FROM Sections WHERE courseID = %s", (course_id,))
+            secID = cursor.fetchall()
+            print("secID", secID[0][0])
+            # Insert new section item
+            cursor.execute("INSERT INTO SectionItems (sectionId, lecId, itemType, itemTitle, itemContent) VALUES \
+                           (%s,%s,%s,%s,%s)", (secID[0][0], result[0][1], item_type, item_title, item_content))
+        conn.commit()
+        cursor.close()
+        conn.close()
         return jsonify({'success': 'Course content added successfully.'})
     except Exception as e:
         return make_response({'error': str(e)}, 400)
 
 # Retrieve Course Content - Condoleezza
-@app.route('/api/course_content/<course_id>', methods=['GET'])
-def course_content(course_id):
+@app.route('/api/retrieve_course_content/<course_id>', methods=['GET'])
+def retrieve_course_content(course_id):
     try:
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor()
-        
-        sections = Sections.query.filter_by(courseID=course_id).all()
-
+        cursor.execute("SELECT s.courseID, s.sectionTitle, i.sectionID, i.itemID, i.itemType, i.itemTitle, i.itemContent FROM SectionItems AS i LEFT JOIN Sections AS s ON s.sectionID = i.sectionID WHERE s.courseID =%s", (course_id,))
         course_content = []
-        for section in sections:
-            section_items = SectionItems.query.filter_by(sectionID=section.sectionID).all()
-            section_content = {'section_title': section.sectionTitle, 'section_items': []}
-            for item in section_items:
-                section_content['section_items'].append({
-                    'item_type': item.itemType,
-                    'item_title': item.itemTitle,
-                    'item_content': item.itemContent
-                })
-            course_content.append(section_content)
-
+        for courseID, sectionTitle, sectionID, itemID, itemType, itemTitle, itemContent in cursor:
+            content = {}
+            content['courseID'] = courseID
+            content['sectionTitle'] = sectionTitle
+            content['sectionID'] = sectionID
+            content['itemID'] = itemID
+            content['itemType'] = itemType
+            content['itemTitle'] = itemTitle
+            content['itemContent'] = itemContent
+            course_content.append(content)
+        cursor.close()
+        conn.close()
         return jsonify({'course_content': course_content})
-
     except Exception as e:
         return make_response({'error': str(e)}, 400)
 

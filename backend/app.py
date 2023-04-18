@@ -690,6 +690,110 @@ def get_replies(thread_id):
         return jsonify({'error': 'Thread not found'}), 404
 
 
+#Assignment
+
+@app.route('/courses/<int:course_id>/assignments', methods=['POST'])
+def create_assignment(course_id):
+
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+
+    data = request.get_json()
+
+    courseID = data['courseID']
+    #studentID = data['studentID']
+    assignmentTitle = data['assignmentTitle']
+    assignmentDescription = data ['assignmentDescription']
+    assignmentDueDate = data ['assignmentDueDate']
+    #assignmentSubmissionDate = data ['assignmentSubmissionDate']
+  
+    try:
+        cursor.execute ("""SELECT courseID FROM Courses WHERE courseID = %s """, (course_id))
+        course = cursor.fetchone()
+
+        if course is not None:
+
+                        cursor.execute ("""INSERT INTO Assignments (courseID, assignmentTitle, assignmentDescription, assignmentDueDate, assignmentSubmissionDate  ) VALUES (%s, %s, %s, %s) """),(courseID, assignmentTitle, assignmentDescription, assignmentDueDate )
+                        
+                        conn.commit()
+                        cursor.close()
+                        conn.close()
+                        
+                        return jsonify ({'message': 'Assignment Created'}), 201
+        else:
+            return jsonify ({'error': 'Course not found'}), 404
+        
+    except IndexError:
+        return jsonify({'error': 'Course not found'}), 404
+
+
+
+# For getting all assignments
+@app.route('/courses/<int:course_id>/assignments', methods=['GET'])
+def get_assignments(course_id):
+    
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+
+
+    cursor.execute("""SELECT * FROM Assignments WHERE courseID = %s""", (course_id))
+    course = cursor.fetchone()
+
+    if course is not None:
+        
+        cursor.execute("""SELECT * FROM Assignments WHERE courseID = %s""", (course_id))
+        assignments = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return jsonify ({'assignments' : assignments}), 200
+    else:
+        return jsonify ({ 'error': 'Course not found'}), 404
+
+
+#For getting a specific assignment
+@app.route('/courses/<int:course_id>/assignments/<int:assignment_id>', methods=['GET'])
+def get_assignment(assignment_id):
+    
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+
+
+    cursor.execute("""SELECT * FROM Assignments WHERE assignmentID = %s""", (assignment_id))
+    assignment = cursor.fetchone()
+    
+    cursor.close()
+    conn.close()
+
+    if assignment is not None:
+
+        return jsonify ({'assignment' : assignment}), 200
+    else:
+        return jsonify ({ 'error': 'Assignment not found'}), 404
+
+
+@app.route('/assignments/<int:assignment_id>', methods=['DELETE'])
+def delete_assignment(assignment_id):
+
+
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+
+    cursor.execute('DELETE FROM assignments WHERE assignment_id = %s', (assignment_id,))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({'message': 'Assignment deleted successfully'}), 200
+
+
+
+#Grades
+
+
+
 
 # REPORTS
 

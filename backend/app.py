@@ -799,13 +799,13 @@ def create_grade(assignment_id):
 
         if assignments is not None:
 
-                        cursor.execute ("""INSERT INTO Grades (gradeID, grade, studentID, assignmentID, courseID  ) VALUES (%s, %s, %s, %s) """),(courseID, assignmentTitle, assignmentDescription, assignmentDueDate )
-                        
-                        conn.commit()
-                        cursor.close()
-                        conn.close()
-                        
-                        return jsonify ({'message': 'Grade Added'}), 201
+            cursor.execute ("""INSERT INTO Grades (gradeID, grade, studentID, assignmentID, courseID  ) VALUES (%s, %s, %s, %s) """),(courseID, assignmentTitle, assignmentDescription, assignmentDueDate )
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            return jsonify ({'message': 'Grade Added'}), 201
         else:
             return jsonify ({'error': 'Assignment not found'}), 404
         
@@ -829,10 +829,10 @@ def get_courses_with_50_or_more_students():
 
     try:
         cursor.execute("""
-        SELECT courseName, COUNT(studentID) AS num_students
-        FROM Enrollments
-        GROUP BY courseName
-        HAVING COUNT(studentID) >= 50;
+        SELECT c.courseName, COUNT(e.studentID) AS num_students
+        FROM Enrollments e INNER JOIN Courses c ON c.courseID = e.courseID
+        GROUP BY c.courseName
+        HAVING COUNT(e.studentID) >= 50;
     """)
         courses = []
         for course in cursor:
@@ -840,6 +840,8 @@ def get_courses_with_50_or_more_students():
             course['courseName'] = courseName
             course['num_students'] = num_students
             courses.append(course)
+        else:
+            return jsonify({'error': 'No courses with 50 or more students'}), 404
         cursor.close()
         conn.close()
         return jsonify({'courses': courses}), 200
@@ -855,17 +857,19 @@ def students_with_5_or_more_courses():
 
     try:
         cursor.execute("""
-        SELECT courseID, COUNT(studentID) AS num_students
-        FROM Enrollments 
-        GROUP BY courseID
-        HAVING COUNT(studentID) >= 5;
+        SELECT c.courseName, COUNT(e.studentID) AS num_students
+        FROM Enrollments e INNER JOIN Courses c ON c.courseID = e.courseID
+        GROUP BY c.courseName
+        HAVING COUNT(e.studentID) >= 5;
         """)
         students = []
         for student in cursor:
             student = {}
-            student['courseID'] = courseID
+            student['courseName'] = courseName
             student['num_students'] = num_students
             students.append(student)
+        else:
+            return jsonify({'error': 'No students with 5 or more courses'}), 404
         cursor.close()
         conn.close()
         return jsonify({'students': students}), 200
@@ -879,17 +883,19 @@ def lecturer_teaching_3_or_more_courses():
 
     try:
         cursor.execute("""
-        SELECT courseID, COUNT(lecID) AS num_lecturers
-        FROM Enrollments 
-        GROUP BY courseID
-        HAVING COUNT(lecID) >= 3;
+        SELECT c.courseName, COUNT(e.lecID) AS num_lecturers
+        FROM Enrollments e INNER JOIN Courses c ON c.courseID = e.courseID
+        GROUP BY c.courseName
+        HAVING COUNT(e.lecID) >= 3;
         """)
         lecturers = []
         for lecturer in cursor:
             lecturer = {}
-            lecturer['courseID'] = courseID
+            lecturer['courseName'] = courseName
             lecturer['num_lecturers'] = num_lecturers
             lecturers.append(lecturer)
+        else:
+            return jsonify({'error': 'No lecturers teaching 3 or more courses'}), 404
         cursor.close()
         conn.close()
         return jsonify({'lecturers': lecturers}), 200
@@ -905,18 +911,20 @@ def top_10_courses():
 
     try:
         cursor.execute("""
-            SELECT courseID, COUNT(studentID) AS num_students
-            FROM enrollments
-            GROUP BY courseID
+            SELECT c.courseName, COUNT(e.studentID) AS num_students
+            FROM Enrollments e INNER JOIN Courses c ON c.courseID = e.courseID
+            GROUP BY c.courseName
             ORDER BY numberOfMembers DESC
             LIMIT 10;
         """)
         courses = []
         for course in cursor:
             course = {}
-            course['courseID'] = courseID
+            course['courseName'] = courseName
             course['num_students'] = num_students
             courses.append(course)
+        else:
+            return jsonify({'error': 'No courses found'}), 404
         cursor.close()
         conn.close()
         return jsonify({'courses': courses}), 200
@@ -943,6 +951,8 @@ def top_10_students():
             student['studentID'] = studentID
             student['averageGrade'] = averageGrade
             students.append(student)
+        else:
+            return jsonify({'error': 'No students found'}), 404
         cursor.close()
         conn.close()
         return jsonify({'students': students}), 200

@@ -754,34 +754,8 @@ def create_assignment(course_id):
         return jsonify({'error': 'Course not found'}), 404
 
 
-
-# For getting all assignments
-@app.route('/courses/<int:course_id>/assignments', methods=['GET'])
-@jwt_required()
-def get_assignments(course_id):
-    
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor()
-
-
-    cursor.execute("""SELECT * FROM Assignments WHERE courseID = %s""", (course_id,))
-    course = cursor.fetchone()
-
-    if course is not None:
-        
-        cursor.execute("""SELECT * FROM Assignments WHERE courseID = %s""", (course_id,))
-        assignments = cursor.fetchall()
-
-        cursor.close()
-        conn.close()
-
-        return jsonify ({'assignments' : assignments}), 200
-    else:
-        return jsonify ({ 'error': 'Course not found'}), 404
-
-
-#For getting a specific assignment
-@app.route('/courses/<int:course_id>/assignments/<int:assignment_id>', methods=['GET'])
+# A lecturer can submit a grade for a particular student for that assignment.
+@app.route('/courses/<int:course_id>/assignments/<int:assignment_id>', methods=['POST'])
 @jwt_required()
 def get_assignment(assignment_id):
     
@@ -802,22 +776,6 @@ def get_assignment(assignment_id):
         return jsonify ({ 'error': 'Assignment not found'}), 404
 
 
-@app.route('/assignments/<int:assignment_id>', methods=['DELETE'])
-@jwt_required()
-def delete_assignment(assignment_id):
-
-
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor()
-
-    cursor.execute('DELETE FROM assignments WHERE assignment_id = %s', (assignment_id,))
-
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-    return jsonify({'message': 'Assignment deleted successfully'}), 200
-
 
 
 #Grades
@@ -829,62 +787,67 @@ def delete_assignment(assignment_id):
 
 
 
-@app.route('/courses_with_50_or_more_students')
-def get_courses_with_50_or_more_students():
-    query= """
-    CREATE VIEW courses_with_50_or_more_students AS
-    SELECT courses.courseID, courses.courseName, COUNT(courses.studentID) AS num_students
-FROM courses 
-JOIN CourseMembers  ON courses .courseID= CourseMembers.courseID
-JOIN students ON CourseMembers .studentID = students.studentID
-GROUP BY courses.courseID, courses.courseName
-HAVING COUNT(students.studentID) >= 50;
-"""
-
-@app.route('/students_with_5_or_more_courses')
-def students_with_5_or_more_courses():
-query= """
-CREATE VIEW courses_with_50_or_more_students AS
-SELECT courses.courseID, courses.courseName, COUNT(students.studentID) AS num_students
-FROM courses 
-JOIN CourseMembers  ON courses .courseID= CourseMembers.courseID
-JOIN students ON CourseMembers .studentID = students.studentID
-GROUP BY courses.courseID, courses.courseID
-HAVING COUNT(students.studentID) >= 50;
-"""
-@app.route('/courses_with_50_or_more_students')
-def get_courses_with_50_or_more_students():
-CREATE VIEW lecturers_with_many_courses AS
-SELECT *
-FROM lecturers
-WHERE coursesTaught> 3;
-
-@app.route('/ students_with_many_courses’)
-def students_with_many_courses ():
-CREATE VIEW students_with_many_courses AS
-SELECT *
-FROM students
-WHERE coursesEnrolled >= 5;
-
-@app.route('/ top_10_courses’)
-def top_10_courses ():
-
-CREATE VIEW top_10_courses AS
-SELECT courseID, COUNT(studentID) AS num_students
-FROM enrollments
-GROUP BY courseID
-ORDER BY numberOfMembers DESC
-LIMIT 10;
+# @app.route('/courses_with_50_or_more_students')
+# def get_courses_with_50_or_more_students():
+#     conn = mysql.connector.connect(**db_config)
+#     cursor = conn.cursor()
 
 
-@app.route('/ top_10_ students’)
-def top_10_ students():
+#     cursor.execute("""
+#     CREATE VIEW courses_with_50_or_more_students AS
+#     SELECT courses.courseID, courses.courseName, COUNT(courses.studentID) AS num_students
+# FROM courses 
+# JOIN CourseMembers  ON courses .courseID= CourseMembers.courseID
+# JOIN students ON CourseMembers .studentID = students.studentID
+# GROUP BY courses.courseID, courses.courseName
+# HAVING COUNT(students.studentID) >= 50;
+# """)
 
-CREATE VIEW top_10_students AS
-SELECT studentID, averageGrade
-FROM Grades
-ORDER BY averageGrade DESC
-LIMIT 10;
+
+# @app.route('/students_with_5_or_more_courses')
+# def students_with_5_or_more_courses():
+# query= """
+# CREATE VIEW courses_with_50_or_more_students AS
+# SELECT courses.courseID, courses.courseName, COUNT(students.studentID) AS num_students
+# FROM courses 
+# JOIN CourseMembers  ON courses .courseID= CourseMembers.courseID
+# JOIN students ON CourseMembers .studentID = students.studentID
+# GROUP BY courses.courseID, courses.courseID
+# HAVING COUNT(students.studentID) >= 50;
+# """
+# @app.route('/courses_with_50_or_more_students')
+# def get_courses_with_50_or_more_students():
+# CREATE VIEW lecturers_with_many_courses AS
+# SELECT *
+# FROM lecturers
+# WHERE coursesTaught> 3;
+
+# @app.route('/ students_with_many_courses’)
+# def students_with_many_courses ():
+# CREATE VIEW students_with_many_courses AS
+# SELECT *
+# FROM students
+# WHERE coursesEnrolled >= 5;
+
+# @app.route('/ top_10_courses’)
+# def top_10_courses ():
+
+# CREATE VIEW top_10_courses AS
+# SELECT courseID, COUNT(studentID) AS num_students
+# FROM enrollments
+# GROUP BY courseID
+# ORDER BY numberOfMembers DESC
+# LIMIT 10;
+
+
+# @app.route('/ top_10_ students’)
+# def top_10_ students():
+
+# CREATE VIEW top_10_students AS
+# SELECT studentID, averageGrade
+# FROM Grades
+# ORDER BY averageGrade DESC
+# LIMIT 10;
 
 
 

@@ -825,7 +825,79 @@ def delete_assignment(assignment_id):
 
 
 
-# REPORTS
+# REPORTS - Tareque
+
+
+
+@app.route('/courses_with_50_or_more_students')
+def get_courses_with_50_or_more_students():
+    query= """
+    CREATE VIEW courses_with_50_or_more_students AS
+    SELECT courses.courseID, courses.courseName, COUNT(courses.studentID) AS num_students
+FROM courses 
+JOIN CourseMembers  ON courses .courseID= CourseMembers.courseID
+JOIN students ON CourseMembers .studentID = students.studentID
+GROUP BY courses.courseID, courses.courseName
+HAVING COUNT(students.studentID) >= 50;
+"""
+
+@app.route('/students_with_5_or_more_courses')
+def students_with_5_or_more_courses():
+query= """
+CREATE VIEW courses_with_50_or_more_students AS
+SELECT courses.courseID, courses.courseName, COUNT(students.studentID) AS num_students
+FROM courses 
+JOIN CourseMembers  ON courses .courseID= CourseMembers.courseID
+JOIN students ON CourseMembers .studentID = students.studentID
+GROUP BY courses.courseID, courses.courseID
+HAVING COUNT(students.studentID) >= 50;
+"""
+@app.route('/courses_with_50_or_more_students')
+def get_courses_with_50_or_more_students():
+CREATE VIEW lecturers_with_many_courses AS
+SELECT *
+FROM lecturers
+WHERE coursesTaught> 3;
+
+@app.route('/ students_with_many_courses’)
+def students_with_many_courses ():
+CREATE VIEW students_with_many_courses AS
+SELECT *
+FROM students
+WHERE coursesEnrolled >= 5;
+
+@app.route('/ top_10_courses’)
+def top_10_courses ():
+
+CREATE VIEW top_10_courses AS
+SELECT courseID, COUNT(studentID) AS num_students
+FROM enrollments
+GROUP BY courseID
+ORDER BY numberOfMembers DESC
+LIMIT 10;
+
+
+@app.route('/ top_10_ students’)
+def top_10_ students():
+
+CREATE VIEW top_10_students AS
+SELECT studentID, averageGrade
+FROM Grades
+ORDER BY averageGrade DESC
+LIMIT 10;
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # Main function

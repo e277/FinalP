@@ -776,9 +776,69 @@ def get_assignment(assignment_id):
         return jsonify ({ 'error': 'Assignment not found'}), 404
 
 
-
-
 #Grades
+
+@app.route('/assignments/<int:assignment_id>/grades', methods=['POST'])
+@jwt_required()
+def create_grade(assignment_id):
+
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+
+    data = request.get_json()
+    
+    gradeID = ['gradeID']
+    grade = ['grade']
+    studentID = ['studentID']
+    assignmentID = ['assignmentID']
+    courseID = ['courseID']
+
+    try:
+        cursor.execute ("""SELECT assignmentID FROM Grades WHERE assignmentID = %s """, (assignment_id))
+        assignments = cursor.fetchall()
+
+        if assignments is not None:
+
+                        cursor.execute ("""INSERT INTO Grades (gradeID, grade, studentID, assignmentID, courseID  ) VALUES (%s, %s, %s, %s) """),(courseID, assignmentTitle, assignmentDescription, assignmentDueDate )
+                        
+                        conn.commit()
+                        cursor.close()
+                        conn.close()
+                        
+                        return jsonify ({'message': 'Grade Added'}), 201
+        else:
+            return jsonify ({'error': 'Assignment not found'}), 404
+        
+    except IndexError:
+        return jsonify({'error': 'Assignment not found'}), 404
+
+
+#To average the grades
+@app.route('/assignments/<int:assignment_id>/grades/<int:student_id>/average', methods=['GET'])
+@jwt_required()
+def get_student_average_(assignment_id, student_id):
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""SELECT AVG(grade) FROM Grades WHERE assignmentID = %s AND studentID = %s""", (assignment_id, student_id))
+        result = cursor.fetchone()
+        avg_grade = result[0]
+
+        cursor.close()
+        conn.close()
+
+        if avg_grade is not None:
+            return jsonify({'assignment_id': assignment_id, 'student_id': student_id, 'average_grade': avg_grade}), 200
+        else:
+            return jsonify({'error': 'No grades found'}), 404
+
+    except IndexError:
+        return jsonify({'error': 'No grades found'}), 404
+
+
+
+
 
 
 

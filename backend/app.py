@@ -785,82 +785,133 @@ def get_assignment(assignment_id):
 
 # REPORTS - Tareque
 
+# All courses that have 50 or more students
+@app.route('/courses_with_50_or_more_students', methods=['GET'])
+def get_courses_with_50_or_more_students():
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+        SELECT courseName, COUNT(studentID) AS num_students
+        FROM Enrollments
+        GROUP BY courseName
+        HAVING COUNT(studentID) >= 50;
+    """)
+        courses = []
+        for course in cursor:
+            course = {}
+            course['courseName'] = courseName
+            course['num_students'] = num_students
+            courses.append(course)
+        cursor.close()
+        conn.close()
+        return jsonify({'courses': courses}), 200
+    except Exception as e:
+        return jsonify({'error': 'Error fetching courses with 50 or more students'}), 404
 
 
-# @app.route('/courses_with_50_or_more_students')
-# def get_courses_with_50_or_more_students():
-#     conn = mysql.connector.connect(**db_config)
-#     cursor = conn.cursor()
+# All students that do 5 or more courses
+@app.route('/students_with_5_or_more_courses', methods=['GET'])
+def students_with_5_or_more_courses():
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+        SELECT courseID, COUNT(studentID) AS num_students
+        FROM Enrollments 
+        GROUP BY courseID
+        HAVING COUNT(studentID) >= 5;
+        """)
+        students = []
+        for student in cursor:
+            student = {}
+            student['courseID'] = courseID
+            student['num_students'] = num_students
+            students.append(student)
+        cursor.close()
+        conn.close()
+        return jsonify({'students': students}), 200
+    except Exception as e:
+        return jsonify({'error': 'Error fetching students with 5 or more courses'}), 404
+
+@app.route('/lecturer_teaching_3_or_more_courses', methods=['GET'])
+def lecturer_teaching_3_or_more_courses():
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+        SELECT courseID, COUNT(lecID) AS num_lecturers
+        FROM Enrollments 
+        GROUP BY courseID
+        HAVING COUNT(lecID) >= 3;
+        """)
+        lecturers = []
+        for lecturer in cursor:
+            lecturer = {}
+            lecturer['courseID'] = courseID
+            lecturer['num_lecturers'] = num_lecturers
+            lecturers.append(lecturer)
+        cursor.close()
+        conn.close()
+        return jsonify({'lecturers': lecturers}), 200
+    except Exception as e:
+        return jsonify({'error': 'Error fetching lecturers teaching 3 or more courses'}), 404
 
 
-#     cursor.execute("""
-#     CREATE VIEW courses_with_50_or_more_students AS
-#     SELECT courses.courseID, courses.courseName, COUNT(courses.studentID) AS num_students
-# FROM courses 
-# JOIN CourseMembers  ON courses .courseID= CourseMembers.courseID
-# JOIN students ON CourseMembers .studentID = students.studentID
-# GROUP BY courses.courseID, courses.courseName
-# HAVING COUNT(students.studentID) >= 50;
-# """)
+# The 10 most enrolled courses
+@app.route('/top_10_courses', methods=['GET'])
+def top_10_courses():
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT courseID, COUNT(studentID) AS num_students
+            FROM enrollments
+            GROUP BY courseID
+            ORDER BY numberOfMembers DESC
+            LIMIT 10;
+        """)
+        courses = []
+        for course in cursor:
+            course = {}
+            course['courseID'] = courseID
+            course['num_students'] = num_students
+            courses.append(course)
+        cursor.close()
+        conn.close()
+        return jsonify({'courses': courses}), 200
+    except Exception as e:
+        return jsonify({'error': 'Error fetching top 10 courses'}), 404
 
 
-# @app.route('/students_with_5_or_more_courses')
-# def students_with_5_or_more_courses():
-# query= """
-# CREATE VIEW courses_with_50_or_more_students AS
-# SELECT courses.courseID, courses.courseName, COUNT(students.studentID) AS num_students
-# FROM courses 
-# JOIN CourseMembers  ON courses .courseID= CourseMembers.courseID
-# JOIN students ON CourseMembers .studentID = students.studentID
-# GROUP BY courses.courseID, courses.courseID
-# HAVING COUNT(students.studentID) >= 50;
-# """
-# @app.route('/courses_with_50_or_more_students')
-# def get_courses_with_50_or_more_students():
-# CREATE VIEW lecturers_with_many_courses AS
-# SELECT *
-# FROM lecturers
-# WHERE coursesTaught> 3;
+# The top 10 students with the highest overall averages.
+@app.route('/top_10_students', methods=['GET'])
+def top_10_students():
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
 
-# @app.route('/ students_with_many_courses’)
-# def students_with_many_courses ():
-# CREATE VIEW students_with_many_courses AS
-# SELECT *
-# FROM students
-# WHERE coursesEnrolled >= 5;
-
-# @app.route('/ top_10_courses’)
-# def top_10_courses ():
-
-# CREATE VIEW top_10_courses AS
-# SELECT courseID, COUNT(studentID) AS num_students
-# FROM enrollments
-# GROUP BY courseID
-# ORDER BY numberOfMembers DESC
-# LIMIT 10;
-
-
-# @app.route('/ top_10_ students’)
-# def top_10_ students():
-
-# CREATE VIEW top_10_students AS
-# SELECT studentID, averageGrade
-# FROM Grades
-# ORDER BY averageGrade DESC
-# LIMIT 10;
-
-
-
-
-
-
-
-
-
-
-
-
-
+    try:
+        cursor.execute("""
+            SELECT s.studentID, AVG(g.Grades) AS averageGrade
+            FROM Students s INNER JOIN Grades g ON s.studentID = g.studentID
+            GROUP BY s.studentID
+            ORDER BY averageGrade DESC
+        """)
+        students = []
+        for student in cursor:
+            student = {}
+            student['studentID'] = studentID
+            student['averageGrade'] = averageGrade
+            students.append(student)
+        cursor.close()
+        conn.close()
+        return jsonify({'students': students}), 200
+    except Exception as e:
+        return jsonify({'error': 'Error fetching top 10 students'}), 404
 
 
 # Main function

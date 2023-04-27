@@ -529,7 +529,7 @@ def get_forums(course_id):
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
 
-    cursor.execute("""SELECT * FROM Courses WHERE courseID = %s""", (course_id,))
+    cursor.execute("""SELECT * FROM Enrollments WHERE courseID = %s""", (course_id,))
     course = cursor.fetchone()
 
     if course is not None:
@@ -556,7 +556,7 @@ def create_forum(course_id):
     forumName = data['forumName']
 
     try:
-        cursor.execute (""" SELECT courseID FROM Courses WHERE courseID = %s """, (course_id))
+        cursor.execute (""" SELECT courseID FROM Enrollments WHERE courseID = %s """, (course_id))
         course = cursor.fetchone()
 
         if course is not None:
@@ -708,7 +708,7 @@ def create_assignment(course_id):
     #assignmentSubmissionDate = data ['assignmentSubmissionDate']
   
     try:
-        cursor.execute ("""SELECT courseID FROM Courses WHERE courseID = %s """, (course_id))
+        cursor.execute ("""SELECT courseID FROM Enrollments WHERE courseID = %s """, (course_id))
         course = cursor.fetchone()
 
         if course is not None:

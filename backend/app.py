@@ -100,7 +100,7 @@ def login():
         """, (username,))
         user = cursor.fetchone()
         # check if user exist
-        # print(user)
+        # print(user[2])
         if user is not None:
             # check if password is correct
             if bcrypt.checkpw(password.encode('utf-8'), user[3].encode('utf-8')):
@@ -112,19 +112,19 @@ def login():
                         SELECT * FROM Admins WHERE typeID = %s
                     """, (user[0],))
                     admin = cursor.fetchone()
-                    return jsonify({'message': 'Login successful', 'access_token': access_token, 'user': admin[3]}), 200
+                    return jsonify({'message': 'Login successful', 'access_token': access_token, 'user': user[2]}), 200
                 elif user[1] == 'lecturer':
                     cursor.execute("""
                         SELECT * FROM Students WHERE typeID = %s
                     """, (user[0],))
                     student = cursor.fetchone()
-                    return jsonify({'message': 'Login successful', 'access_token': access_token, 'user': student[3]}), 200
+                    return jsonify({'message': 'Login successful', 'access_token': access_token, 'user': user[2]}), 200
                 else:
                     cursor.execute("""
                         SELECT * FROM Lecturers WHERE typeID = %s
                     """, (user[0],))
                     lecturer = cursor.fetchone()
-                    return jsonify({'message': 'Login successful', 'access_token': access_token, 'user': lecturer[3]}), 200
+                    return jsonify({'message': 'Login successful', 'access_token': access_token, 'user': user[2]}), 200
             else:
                 return jsonify({'error': 'Invalid credential'}), 401
         else:
@@ -162,21 +162,51 @@ def logout():
 #     return jsonify(access_token=access_token)
 
 
-# @app.route('/api/protected', methods=['GET'])
-# @jwt_required()
-# def protected():
-#     try:
-#         current_user = get_jwt_identity()
-#         name = current_user[1]
-#         return jsonify({'message': 'Hello, {}'.format(name)}), 200
-#     except Exception as e:
-#         return jsonify({'error': str(e)}), 401
 
-
+# An admin should be able to create a course - ezra
+# Only admins should be able to create a course - ezra
+@app.route('/api/course/create', methods=['POST'])
+@jwt_required()
+def store_course():
+    # MySQL Connector initialization
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+    # get the data from the request
+    data = request.get_json()
+    courseName = data['courseName']
+    courseDescription = data['courseDescription']
+    try:
+        # get the current user and check if the user is an admin
+        current_user = get_jwt_identity()
+        # print(current_user)
+        cursor.execute("""
+            SELECT typeName FROM Accounts WHERE typeID = %s
+        """, (current_user,))
+        user = cursor.fetchone()
+        # print(user)
+        if user[0] == 'admin' and current_user is not None:
+            # check if course already exist before creating
+            cursor.execute("""
+                SELECT * FROM Courses WHERE courseName = %s
+            """, (courseName,))
+            course = cursor.fetchone()
+            if course is None:
+                cursor.execute("""
+                    INSERT INTO Courses (courseName, courseDescription) VALUES (%s, %s)
+                """, (courseName, courseDescription))
+                conn.commit()
+                return jsonify({'message': 'Course created successfully'}), 201
+            else:
+                return jsonify({'error': 'Course already exist'}), 400
+        else:
+            return jsonify({'error': 'Unauthorized access'}), 401
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 
 # Retrieve all the courses - ezra
 @app.route('/api/courses', methods=['GET'])
+@jwt_required()
 def get_courses():
     # MySQL Connector initialization
     conn = mysql.connector.connect(**db_config)
@@ -200,6 +230,7 @@ def get_courses():
 
 # Retrieve courses for a particular student - ezra
 @app.route('/api/courses/<int:student_id>', methods=['GET'])
+@jwt_required()
 def get_student_courses(student_id):
     # MySQL Connector initialization
     conn = mysql.connector.connect(**db_config)
@@ -234,6 +265,7 @@ def get_student_courses(student_id):
 
 # Retrieve courses taught by a particular lecturer - ezra
 @app.route('/api/courses/lecturer/<int:lecturer_id>', methods=['GET'])
+@jwt_required()
 def get_lecturer_courses(lecturer_id):
     # MySQL Connector initialization
     conn = mysql.connector.connect(**db_config)
@@ -269,6 +301,7 @@ def get_lecturer_courses(lecturer_id):
 #
 # Register for Course - Condoleezza
 @app.route('/api/register_for_course', methods=['POST'])
+@jwt_required()
 def register_for_course():
     try:
         conn = mysql.connector.connect(**db_config)
@@ -312,6 +345,7 @@ def register_for_course():
 
 # Retrieve Members - Condoleezza
 @app.route('/api/retrieve_members/<course_id>', methods=['GET'])
+@jwt_required()
 def retrieve_members(course_id):
     try:
         conn = mysql.connector.connect(**db_config)
@@ -334,6 +368,7 @@ def retrieve_members(course_id):
 
 # Add Course Content - Condoleezza
 @app.route('/api/add_course_content/<course_id>', methods=['POST'])
+@jwt_required()
 def add_course_content(course_id):
     try:
         conn = mysql.connector.connect(**db_config)
@@ -369,6 +404,7 @@ def add_course_content(course_id):
 
 # Retrieve Course Content - Condoleezza
 @app.route('/api/retrieve_course_content/<course_id>', methods=['GET'])
+@jwt_required()
 def retrieve_course_content(course_id):
     try:
         conn = mysql.connector.connect(**db_config)
@@ -395,6 +431,7 @@ def retrieve_course_content(course_id):
 
 # Retrieve all calender events for a particular course - ezra
 @app.route('/api/courses/<int:course_id>/events', methods=['GET'])
+@jwt_required()
 def get_course_events(course_id):
     # MySQL Connector initialization
     conn = mysql.connector.connect(**db_config)
@@ -431,6 +468,7 @@ def get_course_events(course_id):
 
 # Retrieve all calender events for a particular date for a particular student - ezra
 @app.route('/api/courses/<string:date>/events/<int:student_id>', methods=['GET'])
+@jwt_required()
 def get_student_events(date, student_id):
     # MySQL Connector initialization
     conn = mysql.connector.connect(**db_config)
@@ -469,6 +507,7 @@ def get_student_events(date, student_id):
 
 # Create a calender event for a particular course - ezra
 @app.route('/api/courses/<int:course_id>/events', methods=['POST'])
+@jwt_required()
 def create_course_event(course_id):
     # MySQL Connector initialization
     conn = mysql.connector.connect(**db_config)
@@ -524,16 +563,17 @@ def create_course_event(course_id):
 
 #Forum - Dukie
 @app.route('/courses/<int:course_id>/forums', methods=['GET'])
+@jwt_required()
 def get_forums(course_id):
 
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
 
     cursor.execute("""SELECT * FROM Enrollments WHERE courseID = %s""", (course_id,))
-    course = cursor.fetchone()
+    course = cursor.fetchall()
 
     if course is not None:
-        cursor.execute (""" SELECT * FROM DiscussionForums WHERE courseID = %s""", (course_id))
+        cursor.execute (""" SELECT * FROM DiscussionForums WHERE courseID = %s""", (course_id, ))
         forums = cursor.fetchall()
         cursor.close()
         conn.close()
@@ -544,24 +584,23 @@ def get_forums(course_id):
 
 # Dukie
 @app.route('/courses/<int:course_id>/forums', methods=['POST'])
+@jwt_required()
 def create_forum(course_id):
 
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
-    
+
     data = request.get_json()
-
-
-    courseID = data['courseID']
+    # courseID = data['courseID']
     forumName = data['forumName']
 
     try:
-        cursor.execute (""" SELECT courseID FROM Enrollments WHERE courseID = %s """, (course_id))
-        course = cursor.fetchone()
+        cursor.execute (""" SELECT courseID FROM Enrollments WHERE courseID = %s """, (course_id, ))
+        course = cursor.fetchall()
 
         if course is not None:
 
-            cursor.execute ("""INSERT INTO DiscussionForums (courseID, forumName) VALUES (%s, %s) """),(courseID, forumName)
+            cursor.execute ("""INSERT INTO DiscussionForums (courseID, forumName) VALUES (%s, %s) """, (course_id, forumName))
             
             conn.commit()
             cursor.close()
@@ -576,16 +615,17 @@ def create_forum(course_id):
 
 #Thread - Dukie
 @app.route('/forums/<int:forum_id>/threads', methods=['GET'])
+@jwt_required()
 def get_threads(forum_id):
 
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
 
-    cursor.execute("""SELECT * FROM DiscussionForums WHERE forumID = %s """, (forum_id,))
+    cursor.execute("""SELECT * FROM DiscussionForums WHERE forumID = %s """, (forum_id, ))
     forum = cursor.fetchone()
 
     if forum is not None:
-        cursor.execute (""" SELECT * FROM DiscussionThreads WHERE forumID = %s""", (forum_id))
+        cursor.execute (""" SELECT * FROM DiscussionThreads WHERE forumID = %s""", (forum_id, ))
         threads = cursor.fetchall()
         
         cursor.close()
@@ -597,34 +637,31 @@ def get_threads(forum_id):
 
 # Dukie
 @app.route('/forums/<int:forum_id>/threads', methods=['POST'])
-def create_thread(forumID):
+@jwt_required()
+def create_thread(forum_id):
 
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
 
     data = request.get_json()
-
-    forumID = data['forumID']
     threadTitle = data['threadTitle']
     threadContent = data['threadContent']
     lecID = data['lecID']
     studentID = data['studentID']
 
     try:
-        cursor.execute (""" SELECT forumID FROM DiscussionForums WHERE forumID = %s """, (forumID))
+        cursor.execute (""" SELECT forumID FROM DiscussionForums WHERE forumID = %s """, (forum_id, ))
 
         forum = cursor.fetchone()
-
+        print(forum)
         if forum is not None:
-
-            cursor.execute ("""INSERT INTO DiscussionThreads (forumID, threadTitle, threadContent, lecID, studentID ) VALUES (%s, %s, %s, %s, %s) """),(forumID, threadTitle, threadContent, lecID, studentID )
-
+            cursor.execute ("""INSERT INTO DiscussionThreads (forumID, threadTitle, threadContent, lecID, studentID ) \
+                VALUES (%s, %s, %s, %s, %s) """, (forum[0], threadTitle, threadContent, lecID, studentID))
+            cursor.fetchall()
             conn.commit()
             cursor.close()
             conn.close()
-
             return jsonify ({'message': 'Thread Created'}), 201
-
         else:
             return jsonify ({'error': 'Forumn not found'}), 404
         
@@ -633,26 +670,22 @@ def create_thread(forumID):
 
 #Replies - Dukie
 @app.route('/threads/<int:thread_id>/replies', methods=['POST'])
+@jwt_required()
 def create_reply(thread_id):
-
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
     
     data = request.get_json()
-
-
     threadID = data['threadID']
     courseID = data['courseID']
     replyContent = data['replyContent']
-
     try:
         cursor.execute (""" SELECT threadID FROM DiscussionThreads WHERE threadID = %s """, (thread_id))
         thread = cursor.fetchone()
 
         if thread is not None:
-
-            cursor.execute ("""INSERT INTO DiscussionThreadReplies (threadID, courseID, replyContent ) VALUES (%s, %s, %s,) """),(threadID, courseID, replyContent )
-            
+            cursor.execute ("""INSERT INTO DiscussionThreadReplies (threadID, courseID, replyContent )\
+                 VALUES (%s, %s, %s,) """, (threadID, courseID, replyContent))
             conn.commit()
             cursor.close()
             conn.close()
@@ -666,22 +699,18 @@ def create_reply(thread_id):
     
 # Dukie
 @app.route('/forums/<int:thread_id>/replies', methods=['GET'])
+@jwt_required()
 def get_replies(thread_id):
-
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
-
     try:
-        cursor.execute (""" SELECT threadID FROM DiscussionThreads WHERE threadID = %s """, (thread_id))
+        cursor.execute (""" SELECT threadID FROM DiscussionThreads WHERE threadID = %s """, (thread_id,))
         thread = cursor.fetchone()
-
         if thread is not None:
-            cursor.execute (""" SELECT * FROM DiscussionThreadReplies WHERE threadID = %s""", (thread_id))
+            cursor.execute (""" SELECT * FROM DiscussionThreadReplies WHERE threadID = %s""", (thread_id,))
             replies = cursor.fetchall()
-
             cursor.close()
             conn.close()
-
             return jsonify ({'replies' : replies}), 200
         else:
             return jsonify({'error': 'Thread not found'}), 404
@@ -691,35 +720,33 @@ def get_replies(thread_id):
 
 
 #Assignment
-
 @app.route('/courses/<int:course_id>/assignments', methods=['POST'])
+@jwt_required()
 def create_assignment(course_id):
-
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
 
     data = request.get_json()
-
-    courseID = data['courseID']
-    #studentID = data['studentID']
+    studentID = data['studentID']
     assignmentTitle = data['assignmentTitle']
     assignmentDescription = data ['assignmentDescription']
     assignmentDueDate = data ['assignmentDueDate']
-    #assignmentSubmissionDate = data ['assignmentSubmissionDate']
+    assignmentSubmissionDate = data ['assignmentSubmissionDate']
   
     try:
-        cursor.execute ("""SELECT courseID FROM Enrollments WHERE courseID = %s """, (course_id))
-        course = cursor.fetchone()
+        cursor.execute ("""SELECT courseID FROM Enrollments WHERE courseID = %s """, (course_id,))
+        course = cursor.fetchall()
 
         if course is not None:
+            cursor.execute ("""INSERT INTO Assignments (courseID, studentID, assignmentTitle, assignmentDescription, assignmentDueDate,\
+                    assignmentSubmissionDate) VALUES (%s, %s, %s, %s, %s)\
+                        """, (course_id, studentID, assignmentTitle, assignmentDescription, assignmentDueDate, assignmentSubmissionDate))
 
-                        cursor.execute ("""INSERT INTO Assignments (courseID, assignmentTitle, assignmentDescription, assignmentDueDate, assignmentSubmissionDate  ) VALUES (%s, %s, %s, %s) """),(courseID, assignmentTitle, assignmentDescription, assignmentDueDate )
-                        
-                        conn.commit()
-                        cursor.close()
-                        conn.close()
-                        
-                        return jsonify ({'message': 'Assignment Created'}), 201
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            return jsonify ({'message': 'Assignment Created'}), 201
         else:
             return jsonify ({'error': 'Course not found'}), 404
         
@@ -727,33 +754,9 @@ def create_assignment(course_id):
         return jsonify({'error': 'Course not found'}), 404
 
 
-
-# For getting all assignments
-@app.route('/courses/<int:course_id>/assignments', methods=['GET'])
-def get_assignments(course_id):
-    
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor()
-
-
-    cursor.execute("""SELECT * FROM Assignments WHERE courseID = %s""", (course_id))
-    course = cursor.fetchone()
-
-    if course is not None:
-        
-        cursor.execute("""SELECT * FROM Assignments WHERE courseID = %s""", (course_id))
-        assignments = cursor.fetchall()
-
-        cursor.close()
-        conn.close()
-
-        return jsonify ({'assignments' : assignments}), 200
-    else:
-        return jsonify ({ 'error': 'Course not found'}), 404
-
-
-#For getting a specific assignment
-@app.route('/courses/<int:course_id>/assignments/<int:assignment_id>', methods=['GET'])
+# A lecturer can submit a grade for a particular student for that assignment.
+@app.route('/courses/<int:course_id>/assignments/<int:assignment_id>', methods=['POST'])
+@jwt_required()
 def get_assignment(assignment_id):
     
     conn = mysql.connector.connect(**db_config)
@@ -773,21 +776,6 @@ def get_assignment(assignment_id):
         return jsonify ({ 'error': 'Assignment not found'}), 404
 
 
-@app.route('/assignments/<int:assignment_id>', methods=['DELETE'])
-def delete_assignment(assignment_id):
-
-
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor()
-
-    cursor.execute('DELETE FROM assignments WHERE assignment_id = %s', (assignment_id,))
-
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-    return jsonify({'message': 'Assignment deleted successfully'}), 200
-
 
 
 #Grades
@@ -799,62 +787,67 @@ def delete_assignment(assignment_id):
 
 
 
-@app.route('/courses_with_50_or_more_students')
-def get_courses_with_50_or_more_students():
-    query= """
-    CREATE VIEW courses_with_50_or_more_students AS
-    SELECT courses.courseID, courses.courseName, COUNT(courses.studentID) AS num_students
-FROM courses 
-JOIN CourseMembers  ON courses .courseID= CourseMembers.courseID
-JOIN students ON CourseMembers .studentID = students.studentID
-GROUP BY courses.courseID, courses.courseName
-HAVING COUNT(students.studentID) >= 50;
-"""
-
-@app.route('/students_with_5_or_more_courses')
-def students_with_5_or_more_courses():
-query= """
-CREATE VIEW courses_with_50_or_more_students AS
-SELECT courses.courseID, courses.courseName, COUNT(students.studentID) AS num_students
-FROM courses 
-JOIN CourseMembers  ON courses .courseID= CourseMembers.courseID
-JOIN students ON CourseMembers .studentID = students.studentID
-GROUP BY courses.courseID, courses.courseID
-HAVING COUNT(students.studentID) >= 50;
-"""
-@app.route('/courses_with_50_or_more_students')
-def get_courses_with_50_or_more_students():
-CREATE VIEW lecturers_with_many_courses AS
-SELECT *
-FROM lecturers
-WHERE coursesTaught> 3;
-
-@app.route('/ students_with_many_courses’)
-def students_with_many_courses ():
-CREATE VIEW students_with_many_courses AS
-SELECT *
-FROM students
-WHERE coursesEnrolled >= 5;
-
-@app.route('/ top_10_courses’)
-def top_10_courses ():
-
-CREATE VIEW top_10_courses AS
-SELECT courseID, COUNT(studentID) AS num_students
-FROM enrollments
-GROUP BY courseID
-ORDER BY numberOfMembers DESC
-LIMIT 10;
+# @app.route('/courses_with_50_or_more_students')
+# def get_courses_with_50_or_more_students():
+#     conn = mysql.connector.connect(**db_config)
+#     cursor = conn.cursor()
 
 
-@app.route('/ top_10_ students’)
-def top_10_ students():
+#     cursor.execute("""
+#     CREATE VIEW courses_with_50_or_more_students AS
+#     SELECT courses.courseID, courses.courseName, COUNT(courses.studentID) AS num_students
+# FROM courses 
+# JOIN CourseMembers  ON courses .courseID= CourseMembers.courseID
+# JOIN students ON CourseMembers .studentID = students.studentID
+# GROUP BY courses.courseID, courses.courseName
+# HAVING COUNT(students.studentID) >= 50;
+# """)
 
-CREATE VIEW top_10_students AS
-SELECT studentID, averageGrade
-FROM Grades
-ORDER BY averageGrade DESC
-LIMIT 10;
+
+# @app.route('/students_with_5_or_more_courses')
+# def students_with_5_or_more_courses():
+# query= """
+# CREATE VIEW courses_with_50_or_more_students AS
+# SELECT courses.courseID, courses.courseName, COUNT(students.studentID) AS num_students
+# FROM courses 
+# JOIN CourseMembers  ON courses .courseID= CourseMembers.courseID
+# JOIN students ON CourseMembers .studentID = students.studentID
+# GROUP BY courses.courseID, courses.courseID
+# HAVING COUNT(students.studentID) >= 50;
+# """
+# @app.route('/courses_with_50_or_more_students')
+# def get_courses_with_50_or_more_students():
+# CREATE VIEW lecturers_with_many_courses AS
+# SELECT *
+# FROM lecturers
+# WHERE coursesTaught> 3;
+
+# @app.route('/ students_with_many_courses’)
+# def students_with_many_courses ():
+# CREATE VIEW students_with_many_courses AS
+# SELECT *
+# FROM students
+# WHERE coursesEnrolled >= 5;
+
+# @app.route('/ top_10_courses’)
+# def top_10_courses ():
+
+# CREATE VIEW top_10_courses AS
+# SELECT courseID, COUNT(studentID) AS num_students
+# FROM enrollments
+# GROUP BY courseID
+# ORDER BY numberOfMembers DESC
+# LIMIT 10;
+
+
+# @app.route('/ top_10_ students’)
+# def top_10_ students():
+
+# CREATE VIEW top_10_students AS
+# SELECT studentID, averageGrade
+# FROM Grades
+# ORDER BY averageGrade DESC
+# LIMIT 10;
 
 
 

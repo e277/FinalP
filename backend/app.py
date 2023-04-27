@@ -794,7 +794,7 @@ def create_grade(assignment_id):
     courseID = ['courseID']
 
     try:
-        cursor.execute ("""SELECT assignmentID FROM Grades WHERE assignmentID = %s """, (assignment_id))
+        cursor.execute ("""SELECT assignmentID FROM Assignments WHERE assignmentID = %s """, (assignment_id))
         assignments = cursor.fetchall()
 
         if assignments is not None:
@@ -811,30 +811,6 @@ def create_grade(assignment_id):
         
     except IndexError:
         return jsonify({'error': 'Assignment not found'}), 404
-
-
-#To average the grades
-@app.route('/assignments/<int:assignment_id>/grades/<int:student_id>/average', methods=['GET'])
-@jwt_required()
-def get_student_average_(assignment_id, student_id):
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor()
-
-    try:
-        cursor.execute("""SELECT AVG(grade) FROM Grades WHERE assignmentID = %s AND studentID = %s""", (assignment_id, student_id))
-        result = cursor.fetchone()
-        avg_grade = result[0]
-
-        cursor.close()
-        conn.close()
-
-        if avg_grade is not None:
-            return jsonify({'assignment_id': assignment_id, 'student_id': student_id, 'average_grade': avg_grade}), 200
-        else:
-            return jsonify({'error': 'No grades found'}), 404
-
-    except IndexError:
-        return jsonify({'error': 'No grades found'}), 404
 
 
 

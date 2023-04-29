@@ -828,12 +828,6 @@ def create_grade(assignment_id):
         return jsonify({'error': 'Assignment not found'}), 404
 
 
-
-
-
-
-
-
 # REPORTS - Tareque
 
 # All courses that have 50 or more students
@@ -844,14 +838,15 @@ def get_courses_with_50_or_more_students():
 
     try:
         cursor.execute("""
-            SELECT c.courseName, COUNT(e.studentID) AS num_students
+            SELECT c.courseID, c.courseName, COUNT(e.studentID) AS num_students
             FROM Enrollments e INNER JOIN Courses c ON c.courseID = e.courseID
-            GROUP BY c.courseName
+            GROUP BY c.courseName, c.courseID
             HAVING COUNT(e.studentID) >= 50;
         """)
         courses = []
-        for courseName, num_students in cursor:
+        for courseID, courseName, num_students in cursor:
             course = {}
+            course['courseID'] = courseID
             course['courseName'] = courseName
             course['num_students'] = num_students
             courses.append(course)
@@ -870,14 +865,15 @@ def students_with_5_or_more_courses():
 
     try:
         cursor.execute("""
-            SELECT s.firstName, COUNT(e.studentID) AS num_students
+            SELECT s.studentID, s.firstName, COUNT(e.courseID) AS num_students
             FROM Enrollments e INNER JOIN Students s ON s.studentID = e.studentID
-            GROUP BY s.firstName
-            HAVING COUNT(e.studentID) >= 5;
+            GROUP BY s.firstName, s.studentID
+            HAVING COUNT(e.courseID) >= 5;
         """)
         students = []
-        for firstName, num_students in cursor:
+        for studentID, firstName, num_students in cursor:
             student = {}
+            student['studentID'] = studentID
             student['firstName'] = firstName
             student['num_students'] = num_students
             students.append(student)
@@ -895,14 +891,15 @@ def lecturer_teaching_3_or_more_courses():
 
     try:
         cursor.execute("""
-            SELECT l.firstName, COUNT(e.lecID) AS num_lecturers
+            SELECT l.lecID, l.firstName, COUNT(e.courseID) AS num_lecturers
             FROM Enrollments e INNER JOIN Lecturers l ON l.lecID = e.lecID
-            GROUP BY l.firstName
-            HAVING COUNT(e.lecID) >= 3;
+            GROUP BY l.firstName, l.lecID
+            HAVING COUNT(e.courseID) >= 3;
         """)
         lecturers = []
-        for firstName, num_lecturers in cursor:
+        for lecID, firstName, num_lecturers in cursor:
             lecturer = {}
+            lecturer['lecID'] = lecID
             lecturer['firstName'] = firstName
             lecturer['num_lecturers'] = num_lecturers
             lecturers.append(lecturer)
@@ -921,15 +918,16 @@ def top_10_courses():
 
     try:
         cursor.execute("""
-            SELECT c.courseName, COUNT(e.studentID) AS num_students
+            SELECT e.courseID, c.courseName, COUNT(e.studentID) AS num_students
             FROM Enrollments e INNER JOIN Courses c ON c.courseID = e.courseID
-            GROUP BY c.courseName
+            GROUP BY c.courseName, e.courseID
             ORDER BY COUNT(e.studentID) DESC
             LIMIT 10;
         """)
         courses = []
-        for courseName, num_students in cursor:
+        for courseID, courseName, num_students in cursor:
             course = {}
+            course['courseID'] = courseID
             course['courseName'] = courseName
             course['num_students'] = num_students
             courses.append(course)

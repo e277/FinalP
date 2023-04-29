@@ -60,7 +60,6 @@ CREATE TABLE Enrollments (
     CONSTRAINT min_courses_per_lecturer CHECK (coursesTaught >= 1)
 );
 
-
 CREATE TABLE DiscussionForums (
     forumID INT AUTO_INCREMENT,
     courseID INT NULL,
@@ -143,7 +142,6 @@ CREATE TABLE Assignments (
 CREATE TABLE Grades (
     gradeID INT AUTO_INCREMENT,
     grade FLOAT(3,2),
-    averageGrade FLOAT(3,2) DEFAULT 0,
     studentID INT NULL,
     assignmentID INT NULL,
     courseID INT NULL,

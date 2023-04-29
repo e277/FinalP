@@ -317,8 +317,8 @@ def register_for_course():
         if not result:
             return make_response({'error': 'Course does not exist'}, 404)
 
-        # randomly choose a lecturer for the course
-        cursor.execute("SELECT lecID FROM Lecturers ORDER BY RAND() LIMIT 1")
+        # Check if course has a lecturer assigned
+        cursor.execute("SELECT lec.lecID FROM Lecturers AS lec LEFT JOIN Accounts AS ac ON ac.typeID = lec.typeID AND ac.typeName = 'lecturer'")
         result = cursor.fetchone()
         lecturer_id = result[0]
 

@@ -318,47 +318,29 @@ def register_for_course():
             return make_response({'error': 'Course does not exist'}, 404)
 
         # Check if course has a lecturer assigned
-        cursor.execute("""
-            SELECT lec.lecID 
-            FROM Lecturers AS lec LEFT JOIN Accounts AS ac ON ac.typeID = lec.typeID 
-                LEFT JOIN Enrollments AS en ON en.lecID = lec.lecID WHERE en.courseID = %s
-            """, (course_id,))
+        cursor.execute("SELECT lec.lecID FROM Lecturers AS lec LEFT JOIN Accounts AS ac ON ac.typeID = lec.typeID LEFT JOIN Enrollments AS en ON en.lecID = lec.lecID WHERE en.courseID = %s", (course_id,))
         result = cursor.fetchone()
+        if not result:
+            return make_response({'error': 'This course does not have a lecturer assigned yet'}, 400)
+        
         lecturer_id = result[0]
 
-        cursor.execute("SELECT COUNT(*) FROM Enrollments WHERE lecID=%s", (lecturer_id,))
+        # Check if the student is already enrolled in the course
+        cursor.execute("SELECT * FROM Enrollments WHERE studentID = %s AND courseID = %s", (student_id, course_id))
         result = cursor.fetchone()
-        if result:
-            coursesTaught = result[0] + 1
+        if result is not None:
+            return make_response({'error': 'Student is already enrolled in the course'}, 400)
         else:
-            coursesTaught = 1
-
-        cursor.execute("SELECT COUNT(*) FROM Enrollments WHERE studentID=%s", (student_id,))
-        result = cursor.fetchone()
-        if result:
-            coursesEnrolled = result[0] + 1
-        else:
-            coursesEnrolled = 1
-
-        cursor.execute("SELECT COUNT(*) FROM Enrollments WHERE courseID=%s", (course_id,))
-        result = cursor.fetchone()
-        if result:
-            numberOfMembers = result[0] + 1
-        else:
-            numberOfMembers = 1
-
-        cursor.execute("""
-            INSERT INTO Enrollments (courseID, studentID, lecID, coursesTaught, coursesEnrolled, numberOfMembers)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            """, (course_id, student_id, lecturer_id, coursesTaught, coursesEnrolled, numberOfMembers)
-        )
-
+            # Assign lecturer to the course
+            cursor.execute("INSERT INTO Enrollments (courseID, lecID) VALUES (%s, %s)", (course_id, lecturer_id))
+            # Update record with Student ID
+            cursor.execute("UPDATE Enrollments SET studentID = %s WHERE enrollmentID = LAST_INSERT_ID()", (student_id,))
         conn.commit()
         cursor.close()
         conn.close()
-        return jsonify({'message': 'Successfully registered for course'}), 201
+        return jsonify({'message': 'Course registration successful'}), 201
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        return make_response({'error': str(e)}, 400)
 
 
 # Retrieve Members - Condoleezza
@@ -592,7 +574,13 @@ def get_forums(course_id):
 
     if course is not None:
         cursor.execute (""" SELECT * FROM DiscussionForums WHERE courseID = %s""", (course_id, ))
-        forums = cursor.fetchall()
+        forums = []
+        for forumID, courseID, forumName in cursor:
+            forum = {}
+            forum['forumID'] = forumID   
+            forum['courseID'] = courseID   
+            forum['forumName'] = forumName
+            forums.append(forum) 
         cursor.close()
         conn.close()
 
@@ -644,7 +632,16 @@ def get_threads(forum_id):
 
     if forum is not None:
         cursor.execute (""" SELECT * FROM DiscussionThreads WHERE forumID = %s""", (forum_id, ))
-        threads = cursor.fetchall()
+        threads = []
+        for threadID, forumID, threadTitle, threadContent, lecID, studentID in cursor:
+            thread = {}
+            thread['threadID'] = threadID   
+            thread['forumID'] = forumID   
+            thread['threadTitle'] = threadTitle
+            thread['threadContent'] = threadContent
+            thread['lecID'] = lecID
+            thread['studentID'] = studentID
+            threads.append(thread)
         
         cursor.close()
         conn.close()

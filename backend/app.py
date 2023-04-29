@@ -318,7 +318,11 @@ def register_for_course():
             return make_response({'error': 'Course does not exist'}, 404)
 
         # Check if course has a lecturer assigned
-        cursor.execute("SELECT lec.lecID FROM Lecturers AS lec LEFT JOIN Accounts AS ac ON ac.typeID = lec.typeID AND ac.typeName = 'lecturer'")
+        cursor.execute("""
+            SELECT lec.lecID 
+            FROM Lecturers AS lec LEFT JOIN Accounts AS ac ON ac.typeID = lec.typeID 
+                LEFT JOIN Enrollments AS en ON en.lecID = lec.lecID WHERE en.courseID = %s
+            """, (course_id,))
         result = cursor.fetchone()
         lecturer_id = result[0]
 

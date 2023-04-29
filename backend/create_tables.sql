@@ -46,18 +46,13 @@ CREATE TABLE Enrollments (
     courseID INT NULL,
     studentID INT NULL,
     lecID INT NULL,
-    coursesTaught INT CHECK (coursesTaught >= 1 AND coursesTaught <= 5),
-    coursesEnrolled INT CHECK (coursesEnrolled >= 3 AND coursesEnrolled <= 6),
+    coursesTaught INT CHECK (coursesTaught <= 5),
+    coursesEnrolled INT CHECK (coursesEnrolled <= 6),
     numberOfMembers INT CHECK (numberOfMembers >= 10),
     PRIMARY KEY (enrollmentID),
     FOREIGN KEY (courseID) REFERENCES Courses(courseID),
     FOREIGN KEY (studentID) REFERENCES Students(studentID),
-    FOREIGN KEY (lecID) REFERENCES Lecturers(lecID),
-    CONSTRAINT max_courses_per_student CHECK (coursesEnrolled <= 6),
-    CONSTRAINT min_courses_per_student CHECK (coursesEnrolled >= 3),
-    CONSTRAINT min_members_per_course CHECK (numberOfMembers >= 10),
-    CONSTRAINT max_courses_per_lecturer CHECK (coursesTaught <= 5),
-    CONSTRAINT min_courses_per_lecturer CHECK (coursesTaught >= 1)
+    FOREIGN KEY (lecID) REFERENCES Lecturers(lecID)
 );
 
 CREATE TABLE DiscussionForums (
@@ -141,7 +136,7 @@ CREATE TABLE Assignments (
 
 CREATE TABLE Grades (
     gradeID INT AUTO_INCREMENT,
-    grade FLOAT(3,2),
+    grade DECIMAL(5,2),
     studentID INT NULL,
     assignmentID INT NULL,
     courseID INT NULL,

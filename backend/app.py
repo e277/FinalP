@@ -317,31 +317,45 @@ def register_for_course():
         if not result:
             return make_response({'error': 'Course does not exist'}, 404)
 
-        # Check if course has a lecturer assigned
-        cursor.execute("SELECT lec.lecID FROM Lecturers AS lec LEFT JOIN Accounts AS ac ON ac.typeID = lec.typeID AND ac.typeName = 'lecturer'")
+        # randomly choose a lecturer for the course
+        cursor.execute("SELECT lecID FROM Lecturers ORDER BY RAND() LIMIT 1")
         result = cursor.fetchone()
-        if not result:
-            return make_response({'error': 'This course does not have a lecturer assigned yet'}, 400)
-        
         lecturer_id = result[0]
 
-        # Check if the student is already enrolled in the course
-        cursor.execute("SELECT * FROM Enrollments WHERE studentID = %s AND courseID = %s", (student_id, course_id))
+        cursor.execute("SELECT COUNT(*) FROM Enrollments WHERE lecID=%s", (lecturer_id,))
         result = cursor.fetchone()
-        if result is not None:
-            return make_response({'error': 'Student is already enrolled in the course'}, 400)
+        if result:
+            coursesTaught = result[0] + 1
         else:
-            # Assign lecturer to the course
-            cursor.execute("INSERT INTO Enrollments (courseID, lecID) VALUES (%s, %s)", (course_id, lecturer_id))
-            # Update record with Student ID
-            cursor.execute("UPDATE Enrollments SET studentID = %s WHERE enrollmentID = LAST_INSERT_ID()", (student_id,))
+            coursesTaught = 1
+
+        cursor.execute("SELECT COUNT(*) FROM Enrollments WHERE studentID=%s", (student_id,))
+        result = cursor.fetchone()
+        if result:
+            coursesEnrolled = result[0] + 1
+        else:
+            coursesEnrolled = 1
+
+        cursor.execute("SELECT COUNT(*) FROM Enrollments WHERE courseID=%s", (course_id,))
+        result = cursor.fetchone()
+        if result:
+            numberOfMembers = result[0] + 1
+        else:
+            numberOfMembers = 1
+
+        cursor.execute("""
+            INSERT INTO Enrollments (courseID, studentID, lecID, coursesTaught, coursesEnrolled, numberOfMembers)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """, (course_id, student_id, lecturer_id, coursesTaught, coursesEnrolled, numberOfMembers)
+        )
+
         conn.commit()
         cursor.close()
         conn.close()
-        return jsonify({'message': 'Course registration successful'}), 201
+        return jsonify({'message': 'Successfully registered for course'}), 201
     except Exception as e:
-        return make_response({'error': str(e)}, 400)
-    
+        return jsonify({'error': str(e)}), 400
+
 
 # Retrieve Members - Condoleezza
 @app.route('/api/retrieve_members/<course_id>', methods=['GET'])
@@ -829,19 +843,17 @@ def get_courses_with_50_or_more_students():
 
     try:
         cursor.execute("""
-        SELECT c.courseName, COUNT(e.studentID) AS num_students
-        FROM Enrollments e INNER JOIN Courses c ON c.courseID = e.courseID
-        GROUP BY c.courseName
-        HAVING COUNT(e.studentID) >= 50;
-    """)
+            SELECT c.courseName, COUNT(e.studentID) AS num_students
+            FROM Enrollments e INNER JOIN Courses c ON c.courseID = e.courseID
+            GROUP BY c.courseName
+            HAVING COUNT(e.studentID) >= 50;
+        """)
         courses = []
-        for course in cursor:
+        for courseName, num_students in cursor:
             course = {}
             course['courseName'] = courseName
             course['num_students'] = num_students
             courses.append(course)
-        else:
-            return jsonify({'error': 'No courses with 50 or more students'}), 404
         cursor.close()
         conn.close()
         return jsonify({'courses': courses}), 200
@@ -857,25 +869,24 @@ def students_with_5_or_more_courses():
 
     try:
         cursor.execute("""
-        SELECT c.courseName, COUNT(e.studentID) AS num_students
-        FROM Enrollments e INNER JOIN Courses c ON c.courseID = e.courseID
-        GROUP BY c.courseName
-        HAVING COUNT(e.studentID) >= 5;
+            SELECT s.firstName, COUNT(e.studentID) AS num_students
+            FROM Enrollments e INNER JOIN Students s ON s.studentID = e.studentID
+            GROUP BY s.firstName
+            HAVING COUNT(e.studentID) >= 5;
         """)
         students = []
-        for student in cursor:
+        for firstName, num_students in cursor:
             student = {}
-            student['courseName'] = courseName
+            student['firstName'] = firstName
             student['num_students'] = num_students
             students.append(student)
-        else:
-            return jsonify({'error': 'No students with 5 or more courses'}), 404
         cursor.close()
         conn.close()
         return jsonify({'students': students}), 200
     except Exception as e:
         return jsonify({'error': 'Error fetching students with 5 or more courses'}), 404
 
+# All lecturers that teach 3 or more courses
 @app.route('/lecturer_teaching_3_or_more_courses', methods=['GET'])
 def lecturer_teaching_3_or_more_courses():
     conn = mysql.connector.connect(**db_config)
@@ -883,19 +894,17 @@ def lecturer_teaching_3_or_more_courses():
 
     try:
         cursor.execute("""
-        SELECT c.courseName, COUNT(e.lecID) AS num_lecturers
-        FROM Enrollments e INNER JOIN Courses c ON c.courseID = e.courseID
-        GROUP BY c.courseName
-        HAVING COUNT(e.lecID) >= 3;
+            SELECT l.firstName, COUNT(e.lecID) AS num_lecturers
+            FROM Enrollments e INNER JOIN Lecturers l ON l.lecID = e.lecID
+            GROUP BY l.firstName
+            HAVING COUNT(e.lecID) >= 3;
         """)
         lecturers = []
-        for lecturer in cursor:
+        for firstName, num_lecturers in cursor:
             lecturer = {}
-            lecturer['courseName'] = courseName
+            lecturer['firstName'] = firstName
             lecturer['num_lecturers'] = num_lecturers
             lecturers.append(lecturer)
-        else:
-            return jsonify({'error': 'No lecturers teaching 3 or more courses'}), 404
         cursor.close()
         conn.close()
         return jsonify({'lecturers': lecturers}), 200
@@ -914,17 +923,15 @@ def top_10_courses():
             SELECT c.courseName, COUNT(e.studentID) AS num_students
             FROM Enrollments e INNER JOIN Courses c ON c.courseID = e.courseID
             GROUP BY c.courseName
-            ORDER BY numberOfMembers DESC
+            ORDER BY COUNT(e.studentID) DESC
             LIMIT 10;
         """)
         courses = []
-        for course in cursor:
+        for courseName, num_students in cursor:
             course = {}
             course['courseName'] = courseName
             course['num_students'] = num_students
             courses.append(course)
-        else:
-            return jsonify({'error': 'No courses found'}), 404
         cursor.close()
         conn.close()
         return jsonify({'courses': courses}), 200
@@ -940,19 +947,18 @@ def top_10_students():
 
     try:
         cursor.execute("""
-            SELECT s.studentID, AVG(g.Grades) AS averageGrade
-            FROM Students s INNER JOIN Grades g ON s.studentID = g.studentID
-            GROUP BY s.studentID
-            ORDER BY averageGrade DESC
+            SELECT e.studentID, AVG(g.grade) AS averageGrade
+            FROM Enrollments e INNER JOIN Grades g ON e.studentID = g.studentID
+            GROUP BY e.studentID
+            ORDER BY averageGrade DESC;
         """)
+        
         students = []
-        for student in cursor:
+        for studentID, averageGrade in cursor:
             student = {}
             student['studentID'] = studentID
             student['averageGrade'] = averageGrade
             students.append(student)
-        else:
-            return jsonify({'error': 'No students found'}), 404
         cursor.close()
         conn.close()
         return jsonify({'students': students}), 200
